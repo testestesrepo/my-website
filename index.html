@@ -3,269 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAR デモ（簡易版）</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ar.js/2.2.2/aframe-ar.min.js"></script>
+    <title>カメラテスト</title>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            overflow: hidden;
+            background: #f0f0f0;
+            padding: 20px;
         }
         
-        #info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        #video {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background: #000;
+            border: 2px solid #333;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .status {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        button {
+            background: #007bff;
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 999;
-            font-size: 12px;
-            max-width: 250px;
-        }
-        
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 999;
-            display: flex;
-            gap: 8px;
-        }
-        
-        .control-btn {
-            background: rgba(255,255,255,0.9);
-            border: 1px solid #ccc;
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-size: 12px;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            margin: 5px;
         }
         
-        .control-btn:active {
-            background: rgba(200,200,200,0.9);
+        button:hover {
+            background: #0056b3;
         }
         
-        #debug {
-            position: absolute;
-            bottom: 80px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px;
-            border-radius: 3px;
-            z-index: 999;
-            font-size: 10px;
-            font-family: monospace;
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .info {
+            text-align: left;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #ar-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ar.js/2.2.2/aframe-ar.min.js"></script>
 </head>
 <body>
-    <div id="info">
-        <h4>📱 WebAR テスト</h4>
-        <p>HIROマーカーをカメラに向けてください</p>
-        <p id="status">初期化中...</p>
-    </div>
-    
-    <div id="debug">
-        <div id="debug-info">デバッグ情報</div>
-    </div>
-    
-    <div id="controls">
-        <button class="control-btn" onclick="changeColor()">🎨 色変更</button>
-        <button class="control-btn" onclick="toggleRotation()">🔄 回転</button>
-        <button class="control-btn" onclick="resetCamera()">📷 リセット</button>
-    </div>
-
-    <!-- ARシーン -->
-    <a-scene
-        id="scene"
-        embedded
-        arjs="sourceType: webcam; sourceWidth:1280; sourceHeight:960; displayWidth: 1280; displayHeight: 960; debugUIEnabled: false;">
+    <div class="container">
+        <h1>📱 WebAR カメラテスト</h1>
         
-        <a-marker preset="hiro" id="markerA">
-            <a-entity id="bowser" scale="1 1 1">
-                <!-- シンプルなキューブ -->
-                <a-box 
-                    id="main-box"
-                    position="0 0.5 0" 
-                    rotation="0 45 0"
-                    color="#FF0000" 
-                    scale="0.5 0.5 0.5"
-                    animation="property: rotation; to: 0 405 0; loop: true; dur: 10000; pauseEvents: pause; resumeEvents: resume"
-                    shadow>
-                </a-box>
-                
-                <!-- テキスト -->
-                <a-text 
-                    value="Hello AR!"
-                    position="0 1 0"
-                    align="center"
-                    color="white"
-                    font="kelsonsans"
-                    scale="3 3 3">
-                </a-text>
-                
-                <!-- 地面 -->
-                <a-plane 
-                    position="0 0 0" 
-                    rotation="-90 0 0" 
-                    width="2" 
-                    height="2" 
-                    color="#7BC8A4" 
-                    shadow>
-                </a-plane>
-            </a-entity>
-        </a-marker>
+        <div class="info">
+            <h3>📋 事前チェック</h3>
+            <p><strong>プロトコル:</strong> <span id="protocol"></span></p>
+            <p><strong>ユーザーエージェント:</strong> <span id="useragent"></span></p>
+            <p><strong>MediaDevices対応:</strong> <span id="mediadevices"></span></p>
+            <p><strong>getUserMedia対応:</strong> <span id="getusermedia"></span></p>
+        </div>
         
-        <!-- カメラ -->
-        <a-entity camera></a-entity>
-    </a-scene>
+        <div id="status-container">
+            <div class="status" id="status">
+                <strong>ステータス:</strong> 準備完了
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="testBasicCamera()" id="basic-btn">📷 基本カメラテスト</button>
+            <button onclick="testBackCamera()" id="back-btn">📱 背面カメラテスト</button>
+            <button onclick="stopCamera()" id="stop-btn" disabled>⏹️ カメラ停止</button>
+        </div>
+        
+        <video id="video" autoplay muted playsinline></video>
+        
+        <div id="ar-section" class="hidden">
+            <h3>🔥 AR テスト</h3>
+            <p>カメラが正常に動作したらARテストを開始できます</p>
+            <button onclick="startARTest()" id="ar-btn">🚀 ARテスト開始</button>
+            
+            <div id="ar-container" class="hidden">
+                <a-scene
+                    id="ar-scene"
+                    embedded
+                    arjs="sourceType: webcam; debugUIEnabled: false;"
+                    style="height: 400px; width: 100%;">
+                    
+                    <a-marker preset="hiro">
+                        <a-box position="0 0.5 0" material="color: red;" animation="property: rotation; to: 0 360 0; loop: true; dur: 2000;"></a-box>
+                        <a-text value="Hello AR!" position="0 1 0" align="center"></a-text>
+                    </a-marker>
+                    
+                    <a-entity camera></a-entity>
+                </a-scene>
+                
+                <p style="margin-top: 10px;">
+                    📋 <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">HIROマーカー画像</a>をカメラに向けてください
+                </p>
+            </div>
+        </div>
+    </div>
 
     <script>
-        let scene, marker, box;
-        let colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
-        let colorIndex = 0;
-        let rotationEnabled = true;
+        let currentStream = null;
+        let video = document.getElementById('video');
+        let statusDiv = document.getElementById('status');
         
-        // DOM読み込み完了後の初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM読み込み完了');
-            updateDebug('DOM loaded');
+        // 初期化チェック
+        function initCheck() {
+            document.getElementById('protocol').textContent = window.location.protocol;
+            document.getElementById('useragent').textContent = navigator.userAgent.substring(0, 50) + '...';
+            document.getElementById('mediadevices').textContent = navigator.mediaDevices ? '✅ 対応' : '❌ 非対応';
+            document.getElementById('getusermedia').textContent = navigator.mediaDevices?.getUserMedia ? '✅ 対応' : '❌ 非対応';
             
-            // 要素取得
-            scene = document.querySelector('#scene');
-            marker = document.querySelector('#markerA');
-            box = document.querySelector('#main-box');
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                updateStatus('⚠️ HTTPSが必要です。カメラは動作しません。', 'error');
+            }
+        }
+        
+        // ステータス更新
+        function updateStatus(message, type = '') {
+            statusDiv.innerHTML = `<strong>ステータス:</strong> ${message}`;
+            statusDiv.className = `status ${type}`;
+            console.log('Status:', message);
+        }
+        
+        // 基本カメラテスト
+        async function testBasicCamera() {
+            updateStatus('📷 カメラを起動中...', '');
             
-            if (!scene || !marker || !box) {
-                console.error('要素が見つかりません');
-                updateDebug('ERROR: Elements not found');
-                return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false
+                });
+                
+                currentStream = stream;
+                video.srcObject = stream;
+                
+                updateStatus('✅ カメラ起動成功！', 'success');
+                document.getElementById('stop-btn').disabled = false;
+                document.getElementById('ar-section').classList.remove('hidden');
+                
+                console.log('カメラストリーム:', stream);
+                console.log('ビデオトラック:', stream.getVideoTracks());
+                
+            } catch (error) {
+                console.error('カメラエラー:', error);
+                updateStatus(`❌ カメラエラー: ${error.name} - ${error.message}`, 'error');
+                
+                // 詳細なエラー情報
+                let errorDetails = '';
+                switch(error.name) {
+                    case 'NotAllowedError':
+                        errorDetails = 'カメラの使用が拒否されました。ブラウザの設定でカメラを許可してください。';
+                        break;
+                    case 'NotFoundError':
+                        errorDetails = 'カメラが見つかりません。デバイスにカメラが接続されているか確認してください。';
+                        break;
+                    case 'NotReadableError':
+                        errorDetails = 'カメラが他のアプリケーションで使用中です。';
+                        break;
+                    case 'OverconstrainedError':
+                        errorDetails = '要求されたカメラ設定がサポートされていません。';
+                        break;
+                    default:
+                        errorDetails = '不明なエラーです。';
+                }
+                
+                setTimeout(() => {
+                    updateStatus(`❌ ${errorDetails}`, 'error');
+                }, 2000);
+            }
+        }
+        
+        // 背面カメラテスト
+        async function testBackCamera() {
+            updateStatus('📱 背面カメラを起動中...', '');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: { exact: "environment" }
+                    },
+                    audio: false
+                });
+                
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                
+                currentStream = stream;
+                video.srcObject = stream;
+                
+                updateStatus('✅ 背面カメラ起動成功！', 'success');
+                document.getElementById('stop-btn').disabled = false;
+                document.getElementById('ar-section').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('背面カメラエラー:', error);
+                
+                // フォールバック: 通常のカメラ
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" },
+                        audio: false
+                    });
+                    
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => track.stop());
+                    }
+                    
+                    currentStream = fallbackStream;
+                    video.srcObject = fallbackStream;
+                    
+                    updateStatus('⚠️ 背面カメラなし。フロントカメラを使用中', 'success');
+                    document.getElementById('stop-btn').disabled = false;
+                    document.getElementById('ar-section').classList.remove('hidden');
+                    
+                } catch (fallbackError) {
+                    updateStatus(`❌ カメラエラー: ${fallbackError.message}`, 'error');
+                }
+            }
+        }
+        
+        // カメラ停止
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+                video.srcObject = null;
+                updateStatus('📷 カメラを停止しました', '');
+                document.getElementById('stop-btn').disabled = true;
+                document.getElementById('ar-section').classList.add('hidden');
+            }
+        }
+        
+        // ARテスト開始
+        function startARTest() {
+            updateStatus('🔥 ARを初期化中...', '');
+            
+            // カメラを停止してAR.jsに移行
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+                video.srcObject = null;
             }
             
-            updateDebug('Elements found');
+            document.getElementById('ar-container').classList.remove('hidden');
             
-            // マーカーイベント
-            marker.addEventListener('markerFound', function() {
-                console.log('マーカー発見');
-                updateDebug('Marker found!');
-                document.getElementById('status').textContent = 'マーカー検出中 ✅';
-            });
+            const scene = document.getElementById('ar-scene');
             
-            marker.addEventListener('markerLost', function() {
-                console.log('マーカー消失');
-                updateDebug('Marker lost');
-                document.getElementById('status').textContent = 'マーカーを探しています 🔍';
-            });
-            
-            // シーンイベント
             scene.addEventListener('arjs-video-loaded', function() {
-                console.log('カメラ映像読み込み完了');
-                updateDebug('Camera loaded');
-                document.getElementById('status').textContent = 'カメラ準備完了 📹';
+                updateStatus('✅ AR初期化完了！HIROマーカーをカメラに向けてください', 'success');
             });
             
             scene.addEventListener('camera-error', function(error) {
-                console.error('カメラエラー:', error);
-                updateDebug('Camera error: ' + error);
-                document.getElementById('status').textContent = 'カメラエラー ❌';
+                updateStatus('❌ ARカメラエラー', 'error');
+                console.error('AR Camera Error:', error);
+            });
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initCheck();
+            
+            // ビデオ要素のイベント
+            video.addEventListener('loadedmetadata', function() {
+                console.log('ビデオメタデータ読み込み完了');
+                console.log(`解像度: ${video.videoWidth}x${video.videoHeight}`);
             });
             
-            // 初期化完了
-            setTimeout(() => {
-                updateDebug('Init complete');
-                document.getElementById('status').textContent = 'HIROマーカーをカメラに向けてください';
-            }, 2000);
+            video.addEventListener('error', function(e) {
+                console.error('ビデオエラー:', e);
+                updateStatus('❌ ビデオ再生エラー', 'error');
+            });
         });
-        
-        // 色変更
-        function changeColor() {
-            if (!box) return;
-            colorIndex = (colorIndex + 1) % colors.length;
-            box.setAttribute('color', colors[colorIndex]);
-            updateDebug('Color changed to: ' + colors[colorIndex]);
-        }
-        
-        // 回転切り替え
-        function toggleRotation() {
-            if (!box) return;
-            rotationEnabled = !rotationEnabled;
-            
-            if (rotationEnabled) {
-                box.emit('resume');
-                updateDebug('Rotation enabled');
-            } else {
-                box.emit('pause');
-                updateDebug('Rotation paused');
-            }
-        }
-        
-        // カメラリセット
-        function resetCamera() {
-            console.log('カメラリセット試行');
-            updateDebug('Camera reset requested');
-            
-            // シーンを再初期化
-            if (scene) {
-                scene.setAttribute('arjs', 'sourceType: webcam; sourceWidth:1280; sourceHeight:960; displayWidth: 1280; displayHeight: 960; debugUIEnabled: false;');
-            }
-        }
-        
-        // デバッグ情報更新
-        function updateDebug(message) {
-            const debugElement = document.getElementById('debug-info');
-            const timestamp = new Date().toLocaleTimeString();
-            debugElement.innerHTML = `${timestamp}: ${message}`;
-            console.log(`[${timestamp}] ${message}`);
-        }
         
         // エラーハンドリング
         window.addEventListener('error', function(e) {
             console.error('Global error:', e);
-            updateDebug('Error: ' + e.message);
-            document.getElementById('status').textContent = 'エラーが発生しました';
+            updateStatus('❌ エラーが発生しました: ' + e.message, 'error');
         });
         
-        // ページ可視性変更
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                updateDebug('Page hidden');
-            } else {
-                updateDebug('Page visible');
-            }
-        });
-        
-        // カメラ権限チェック
-        navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: 'environment',
-                width: { min: 640, ideal: 1280 },
-                height: { min: 480, ideal: 960 }
-            } 
-        })
-        .then(function(stream) {
-            console.log('カメラ権限OK');
-            updateDebug('Camera permission granted');
-            // ストリームを即座に停止（AR.jsが管理するため）
-            stream.getTracks().forEach(track => track.stop());
-        })
-        .catch(function(err) {
-            console.error('カメラ権限エラー:', err);
-            updateDebug('Camera permission denied: ' + err.name);
-            document.getElementById('status').innerHTML = 
-                `カメラ権限が必要です<br><small>${err.message}</small>`;
-        });
-        
-        // 初期化ログ
-        updateDebug('Script loaded');
-        console.log('WebAR Script initialized');
-        console.log('Protocol:', window.location.protocol);
-        console.log('User Agent:', navigator.userAgent);
+        console.log('WebAR Camera Test initialized');
     </script>
 </body>
 </html>
