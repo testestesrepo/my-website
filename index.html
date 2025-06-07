@@ -129,7 +129,7 @@
                 <a-scene
                     id="ar-scene"
                     embedded
-                    arjs="sourceType: webcam; debugUIEnabled: false; cameraParametersUrl: data/camera_para.dat;"
+                    arjs="sourceType: webcam; debugUIEnabled: false; displayWidth: 640; displayHeight: 480; cameraParametersUrl: '';"
                     style="height: 400px; width: 100%;"
                     vr-mode-ui="enabled: false;">
                     
@@ -309,7 +309,7 @@
         }
         
         // ARテスト開始
-        function startARTest() {
+        async function startARTest() {
             updateStatus('🔥 ARを初期化中...', '');
             updateARDebug('AR初期化を開始...');
             
@@ -320,6 +320,23 @@
                 video.srcObject = null;
             }
             
+            // 少し待機してからAR初期化
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 手動でカメラ権限を確認
+            try {
+                updateARDebug('カメラ権限を確認中...');
+                const testStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                testStream.getTracks().forEach(track => track.stop());
+                updateARDebug('カメラ権限確認完了');
+            } catch (error) {
+                updateStatus('❌ カメラ権限が必要です', 'error');
+                updateARDebug('カメラ権限を許可してください: ' + error.message);
+                return;
+            }
+            
             // ARコンテナを表示
             document.getElementById('ar-container').classList.remove('hidden');
             document.getElementById('ar-btn').classList.add('hidden');
@@ -328,19 +345,35 @@
             // A-Frameシーンを取得
             arScene = document.getElementById('ar-scene');
             
+            // 既存のイベントリスナーを削除
+            const newScene = arScene.cloneNode(true);
+            arScene.parentNode.replaceChild(newScene, arScene);
+            arScene = newScene;
+            
             // AR.jsのイベントリスナーを設定
-            arScene.addEventListener('arjs-video-loaded', function(e) {
+            let initTimeout;
+            let loadedTimeout;
+            
+            const onVideoLoaded = function(e) {
+                clearTimeout(initTimeout);
+                clearTimeout(loadedTimeout);
                 updateStatus('✅ AR初期化完了！HIROマーカーをカメラに向けてください', 'success');
                 updateARDebug('ARカメラが正常に起動しました');
                 arActive = true;
                 console.log('AR Video loaded:', e);
-            });
+            };
             
-            arScene.addEventListener('camera-error', function(error) {
+            const onCameraError = function(error) {
+                clearTimeout(initTimeout);
+                clearTimeout(loadedTimeout);
                 updateStatus('❌ ARカメラエラー', 'error');
                 updateARDebug('ARカメラの起動に失敗しました: ' + error.message);
                 console.error('AR Camera Error:', error);
-            });
+                tryFallbackAR();
+            };
+            
+            arScene.addEventListener('arjs-video-loaded', onVideoLoaded);
+            arScene.addEventListener('camera-error', onCameraError);
             
             // AR.jsの詳細イベント
             arScene.addEventListener('camera-init', function(e) {
@@ -348,35 +381,147 @@
                 console.log('AR Camera init:', e);
             });
             
-            // マーカー検出イベント
-            const marker = arScene.querySelector('a-marker');
-            if (marker) {
-                marker.addEventListener('markerFound', function() {
-                    updateARDebug('マーカーを検出しました！');
-                    console.log('Marker found');
-                });
+            // A-Frameの読み込み完了を待機
+            arScene.addEventListener('loaded', function() {
+                updateARDebug('A-Frameシーンが読み込まれました');
                 
-                marker.addEventListener('markerLost', function() {
-                    updateARDebug('マーカーを見失いました');
-                    console.log('Marker lost');
-                });
-            }
+                // マーカー検出イベント
+                const marker = arScene.querySelector('a-marker');
+                if (marker) {
+                    marker.addEventListener('markerFound', function() {
+                        updateARDebug('マーカーを検出しました！');
+                        console.log('Marker found');
+                    });
+                    
+                    marker.addEventListener('markerLost', function() {
+                        updateARDebug('マーカーを見失いました');
+                        console.log('Marker lost');
+                    });
+                }
+            });
             
-            // 初期化タイムアウト
-            setTimeout(() => {
+            // 初期化タイムアウト（短縮）
+            initTimeout = setTimeout(() => {
                 if (!arActive) {
                     updateStatus('⚠️ AR初期化に時間がかかっています...', '');
                     updateARDebug('AR初期化中... カメラの許可を確認してください');
-                    
-                    // さらに待機
-                    setTimeout(() => {
-                        if (!arActive) {
-                            updateStatus('❌ AR初期化がタイムアウトしました', 'error');
-                            updateARDebug('AR初期化がタイムアウトしました。ページを再読み込みしてください');
-                        }
-                    }, 10000);
                 }
-            }, 5000);
+            }, 3000);
+            
+            // 最終タイムアウト
+            loadedTimeout = setTimeout(() => {
+                if (!arActive) {
+                    updateStatus('❌ AR初期化がタイムアウトしました', 'error');
+                    updateARDebug('AR初期化がタイムアウトしました。フォールバック機能を試行します');
+                    tryFallbackAR();
+                }
+            }, 8000);
+        }
+        
+        // フォールバック AR（シンプルバージョン）
+        async function tryFallbackAR() {
+            updateStatus('🔄 フォールバックAR機能を試行中...', '');
+            updateARDebug('シンプルなAR設定で再試行中...');
+            
+            // 既存のシーンをクリアしてシンプルなバージョンを作成
+            const arContainer = document.getElementById('ar-container');
+            const oldScene = document.getElementById('ar-scene');
+            
+            // 新しいシンプルなシーンを作成
+            const newScene = document.createElement('a-scene');
+            newScene.id = 'ar-scene';
+            newScene.setAttribute('embedded', '');
+            newScene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: true; displayWidth: 640; displayHeight: 480;');
+            newScene.setAttribute('style', 'height: 400px; width: 100%;');
+            newScene.setAttribute('vr-mode-ui', 'enabled: false');
+            
+            newScene.innerHTML = `
+                <a-marker preset="hiro">
+                    <a-box 
+                        position="0 0.5 0" 
+                        material="color: blue;" 
+                        scale="0.5 0.5 0.5"
+                        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000;">
+                    </a-box>
+                    <a-text 
+                        value="Fallback AR" 
+                        position="0 1 0" 
+                        align="center"
+                        color="yellow"
+                        scale="0.5 0.5 0.5">
+                    </a-text>
+                </a-marker>
+                
+                <a-entity camera></a-entity>
+            `;
+            
+            // シーンを置換
+            oldScene.parentNode.replaceChild(newScene, oldScene);
+            arScene = newScene;
+            
+            // フォールバック用イベントリスナー
+            const fallbackTimeout = setTimeout(() => {
+                if (!arActive) {
+                    updateStatus('❌ フォールバックAR機能も失敗しました', 'error');
+                    updateARDebug('すべてのAR機能が失敗しました。デバイスまたはブラウザが対応していない可能性があります');
+                    showManualCameraOption();
+                }
+            }, 10000);
+            
+            arScene.addEventListener('arjs-video-loaded', function(e) {
+                clearTimeout(fallbackTimeout);
+                updateStatus('✅ フォールバックAR機能が起動しました！', 'success');
+                updateARDebug('シンプルAR設定で正常に起動しました');
+                arActive = true;
+                console.log('Fallback AR Video loaded:', e);
+            });
+            
+            arScene.addEventListener('camera-error', function(error) {
+                clearTimeout(fallbackTimeout);
+                updateStatus('❌ フォールバックAR機能も失敗', 'error');
+                updateARDebug('フォールバックAR機能も失敗: ' + error.message);
+                showManualCameraOption();
+            });
+        }
+        
+        // 手動カメラオプションを表示
+        function showManualCameraOption() {
+            updateARDebug('手動カメラテストを試してください');
+            
+            // 手動カメラテストボタンを作成
+            const manualButton = document.createElement('button');
+            manualButton.textContent = '🔧 手動カメラテスト';
+            manualButton.onclick = async function() {
+                updateStatus('🔧 手動カメラテストを実行中...', '');
+                updateARDebug('手動でカメラを起動します...');
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    });
+                    
+                    // ARシーン内のビデオを直接設定
+                    const arVideo = arScene.querySelector('video') || document.createElement('video');
+                    arVideo.srcObject = stream;
+                    arVideo.autoplay = true;
+                    arVideo.muted = true;
+                    arVideo.playsInline = true;
+                    
+                    updateStatus('✅ 手動カメラテスト成功', 'success');
+                    updateARDebug('手動カメラが起動しました。AR機能は制限されますが、カメラは使用可能です');
+                    
+                } catch (error) {
+                    updateStatus('❌ 手動カメラテストも失敗', 'error');
+                    updateARDebug('手動カメラテスト失敗: ' + error.message);
+                }
+            };
+            
+            const arDebugDiv = document.getElementById('ar-debug').parentElement;
+            arDebugDiv.appendChild(manualButton);
         }
         
         // AR停止
