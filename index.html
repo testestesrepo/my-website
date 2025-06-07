@@ -2,30 +2,63 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>カメラテスト</title>
+    <title>スマホ向けAR.jsサンプル</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/jeromeetienne/ar.js/2.4.1/aframe/build/aframe-ar.min.js"></script>
     <style>
-      video {
-        width: 100vw;
-        height: 100vh;
-        object-fit: cover;
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: black;
+      }
+      #startButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px 40px;
+        font-size: 18px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 10;
+      }
+      #arScene {
+        display: none;
       }
     </style>
   </head>
   <body>
-    <video id="video" autoplay playsinline></video>
+    <!-- Start ボタン -->
+    <button id="startButton">ARをはじめる</button>
+
+    <!-- A-Frame + AR.js のシーン -->
+    <a-scene
+      id="arScene"
+      embedded
+      arjs="sourceType: webcam; sourceCameraPosition: environment; debugUIEnabled: true;"
+    >
+      <!-- Hiro マーカーに赤い立方体を表示 -->
+      <a-marker preset="hiro">
+        <a-box position="0 0.5 0" material="color: red;"></a-box>
+      </a-marker>
+
+      <!-- カメラ -->
+      <a-entity camera></a-entity>
+    </a-scene>
 
     <script>
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          document.getElementById('video').srcObject = stream;
-        })
-        .catch(err => {
-          console.error('カメラ取得エラー:', err);
-          alert('カメラ取得に失敗しました: ' + err.message);
-        });
+      // ボタンクリックでAR開始
+      document.getElementById('startButton').addEventListener('click', function () {
+        document.getElementById('startButton').style.display = 'none';
+        document.getElementById('arScene').style.display = 'block';
+      });
     </script>
   </body>
 </html>
+
 
 
 
