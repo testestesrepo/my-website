@@ -3,28 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAR デモ（改良版）</title>
+    <title>WebAR デモ（簡易版）</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ar.js/2.2.2/aframe-ar.min.js"></script>
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #000;
+            overflow: hidden;
         }
         
         #info {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.7);
             color: white;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 5px;
             z-index: 999;
-            font-size: 14px;
-            max-width: 320px;
-            border: 1px solid #444;
+            font-size: 12px;
+            max-width: 250px;
         }
         
         #controls {
@@ -34,320 +33,239 @@
             transform: translateX(-50%);
             z-index: 999;
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
+            gap: 8px;
         }
         
         .control-btn {
-            background: rgba(255,255,255,0.95);
-            border: 2px solid #007bff;
-            padding: 12px 18px;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: bold;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            color: #007bff;
-            transition: all 0.3s ease;
-        }
-        
-        .control-btn:hover {
-            background: #007bff;
-            color: white;
-            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
         
         .control-btn:active {
-            transform: translateY(0);
+            background: rgba(200,200,200,0.9);
         }
         
-        #status {
+        #debug {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
+            bottom: 80px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            z-index: 1000;
-            text-align: center;
-            border: 2px solid #007bff;
-        }
-        
-        .qr-container {
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        .qr-code {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin: 10px;
-        }
-        
-        .hide {
-            display: none !important;
-        }
-        
-        #scene-container {
-            width: 100vw;
-            height: 100vh;
+            padding: 5px;
+            border-radius: 3px;
+            z-index: 999;
+            font-size: 10px;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
-    <div id="status">
-        <h3>📱 WebAR デモ</h3>
-        <p id="status-text">カメラを初期化中...</p>
-        <div class="qr-container">
-            <p>📋 下記のマーカーをプリントまたは画面表示してカメラに向けてください：</p>
-            <div class="qr-code">
-                <img src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" 
-                     alt="HIROマーカー" width="150" height="150">
-                <p>HIROマーカー</p>
-            </div>
-        </div>
-        <button class="control-btn" onclick="startAR()" id="start-btn">🚀 ARを開始</button>
+    <div id="info">
+        <h4>📱 WebAR テスト</h4>
+        <p>HIROマーカーをカメラに向けてください</p>
+        <p id="status">初期化中...</p>
     </div>
     
-    <div id="info" class="hide">
-        <h3>📸 WebAR 動作中</h3>
-        <p>マーカーをカメラに向けると3Dオブジェクトが表示されます</p>
-        <p><strong>操作:</strong></p>
-        <ul>
-            <li>マーカーを画面中央に</li>
-            <li>適度な距離を保つ</li>
-            <li>明るい場所で使用</li>
-        </ul>
+    <div id="debug">
+        <div id="debug-info">デバッグ情報</div>
     </div>
     
-    <div id="controls" class="hide">
-        <button class="control-btn" onclick="switchObject('cube')">🎲 キューブ</button>
-        <button class="control-btn" onclick="switchObject('sphere')">⚪ 球体</button>
-        <button class="control-btn" onclick="switchObject('torus')">🍩 トーラス</button>
-        <button class="control-btn" onclick="toggleAnimation()">⏯️ アニメ</button>
+    <div id="controls">
+        <button class="control-btn" onclick="changeColor()">🎨 色変更</button>
+        <button class="control-btn" onclick="toggleRotation()">🔄 回転</button>
+        <button class="control-btn" onclick="resetCamera()">📷 リセット</button>
     </div>
 
-    <div id="scene-container" class="hide">
-        <a-scene 
-            embedded 
-            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; patternRatio: 0.8; trackingMethod: best;"
-            vr-mode-ui="enabled: false"
-            id="scene"
-            gesture-detector>
-            
-            <!-- マーカー定義 -->
-            <a-marker preset="hiro" id="hiro-marker">
-                <!-- デフォルト表示オブジェクト -->
-                <a-entity id="ar-objects">
-                    <a-box 
-                        id="main-cube"
-                        position="0 0.5 0" 
-                        rotation="0 45 0"
-                        color="#FF6B6B" 
-                        scale="0.8 0.8 0.8"
-                        material="metalness: 0.2; roughness: 0.8"
-                        animation="property: rotation; to: 0 405 0; loop: true; dur: 4000">
-                        <!-- キューブの子要素として小さなオブジェクト -->
-                        <a-sphere 
-                            position="0 1 0" 
-                            radius="0.1" 
-                            color="#4ECDC4"
-                            animation="property: position; to: 0 1.5 0; direction: alternate; loop: true; dur: 2000">
-                        </a-sphere>
-                    </a-box>
-                    
-                    <a-sphere 
-                        id="main-sphere"
-                        position="0 0.5 0" 
-                        radius="0.4"
-                        color="#4ECDC4"
-                        material="metalness: 0.3; roughness: 0.4"
-                        visible="false"
-                        animation="property: rotation; to: 360 0 0; loop: true; dur: 3000">
-                    </a-sphere>
-                    
-                    <a-torus 
-                        id="main-torus"
-                        position="0 0.5 0" 
-                        color="#9C88FF" 
-                        radius="0.4" 
-                        radius-tubular="0.08"
-                        visible="false"
-                        material="metalness: 0.1; roughness: 0.9"
-                        animation="property: rotation; to: 0 0 360; loop: true; dur: 5000">
-                    </a-torus>
-                    
-                    <!-- テキスト表示 -->
-                    <a-text 
-                        value="WebAR Demo" 
-                        position="0 -0.3 0" 
-                        align="center" 
-                        color="#ffffff"
-                        scale="2 2 2"
-                        font="dejavu">
-                    </a-text>
-                </a-entity>
+    <!-- ARシーン -->
+    <a-scene
+        id="scene"
+        embedded
+        arjs="sourceType: webcam; sourceWidth:1280; sourceHeight:960; displayWidth: 1280; displayHeight: 960; debugUIEnabled: false;">
+        
+        <a-marker preset="hiro" id="markerA">
+            <a-entity id="bowser" scale="1 1 1">
+                <!-- シンプルなキューブ -->
+                <a-box 
+                    id="main-box"
+                    position="0 0.5 0" 
+                    rotation="0 45 0"
+                    color="#FF0000" 
+                    scale="0.5 0.5 0.5"
+                    animation="property: rotation; to: 0 405 0; loop: true; dur: 10000; pauseEvents: pause; resumeEvents: resume"
+                    shadow>
+                </a-box>
                 
-                <!-- 環境照明 -->
-                <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
-                <a-light type="point" position="2 4 4" color="#ffffff" intensity="0.8"></a-light>
-            </a-marker>
-            
-            <!-- カメラ -->
-            <a-entity camera></a-entity>
-        </a-scene>
-    </div>
+                <!-- テキスト -->
+                <a-text 
+                    value="Hello AR!"
+                    position="0 1 0"
+                    align="center"
+                    color="white"
+                    font="kelsonsans"
+                    scale="3 3 3">
+                </a-text>
+                
+                <!-- 地面 -->
+                <a-plane 
+                    position="0 0 0" 
+                    rotation="-90 0 0" 
+                    width="2" 
+                    height="2" 
+                    color="#7BC8A4" 
+                    shadow>
+                </a-plane>
+            </a-entity>
+        </a-marker>
+        
+        <!-- カメラ -->
+        <a-entity camera></a-entity>
+    </a-scene>
 
     <script>
-        let currentObject = 'cube';
-        let animationEnabled = true;
-        let arStarted = false;
+        let scene, marker, box;
+        let colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+        let colorIndex = 0;
+        let rotationEnabled = true;
         
-        // AR開始
-        function startAR() {
-            console.log('AR開始要求');
+        // DOM読み込み完了後の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM読み込み完了');
+            updateDebug('DOM loaded');
             
-            // カメラ権限をリクエスト
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
-            })
-            .then(function(stream) {
-                console.log('カメラアクセス許可');
-                // ストリームを停止（A-Frameが管理するため）
-                stream.getTracks().forEach(track => track.stop());
-                
-                // UI切り替え
-                document.getElementById('status').classList.add('hide');
-                document.getElementById('scene-container').classList.remove('hide');
-                document.getElementById('info').classList.remove('hide');
-                document.getElementById('controls').classList.remove('hide');
-                
-                arStarted = true;
-                
-                // ARシーン初期化
-                initializeAR();
-            })
-            .catch(function(err) {
-                console.error('カメラアクセス拒否:', err);
-                document.getElementById('status-text').innerHTML = 
-                    `❌ カメラへのアクセスが必要です<br>
-                    エラー: ${err.message}<br>
-                    <small>ブラウザの設定でカメラを許可してください</small>`;
-            });
-        }
-        
-        // AR初期化
-        function initializeAR() {
-            const scene = document.querySelector('#scene');
-            const marker = document.querySelector('#hiro-marker');
+            // 要素取得
+            scene = document.querySelector('#scene');
+            marker = document.querySelector('#markerA');
+            box = document.querySelector('#main-box');
             
-            // マーカー検出イベント
+            if (!scene || !marker || !box) {
+                console.error('要素が見つかりません');
+                updateDebug('ERROR: Elements not found');
+                return;
+            }
+            
+            updateDebug('Elements found');
+            
+            // マーカーイベント
             marker.addEventListener('markerFound', function() {
-                console.log('マーカー検出');
-                document.querySelector('#info h3').textContent = '✅ マーカー検出中';
+                console.log('マーカー発見');
+                updateDebug('Marker found!');
+                document.getElementById('status').textContent = 'マーカー検出中 ✅';
             });
             
             marker.addEventListener('markerLost', function() {
                 console.log('マーカー消失');
-                document.querySelector('#info h3').textContent = '🔍 マーカーを探しています';
-            });
-        }
-        
-        // オブジェクト切り替え
-        function switchObject(type) {
-            console.log('オブジェクト切り替え:', type);
-            
-            const cube = document.querySelector('#main-cube');
-            const sphere = document.querySelector('#main-sphere');
-            const torus = document.querySelector('#main-torus');
-            
-            // すべて非表示
-            cube.setAttribute('visible', 'false');
-            sphere.setAttribute('visible', 'false');
-            torus.setAttribute('visible', 'false');
-            
-            // 選択されたオブジェクトを表示
-            switch(type) {
-                case 'cube':
-                    cube.setAttribute('visible', 'true');
-                    break;
-                case 'sphere':
-                    sphere.setAttribute('visible', 'true');
-                    break;
-                case 'torus':
-                    torus.setAttribute('visible', 'true');
-                    break;
-            }
-            
-            currentObject = type;
-            
-            // フィードバック
-            showFeedback(`${type}に切り替えました`);
-        }
-        
-        // アニメーション切り替え
-        function toggleAnimation() {
-            animationEnabled = !animationEnabled;
-            console.log('アニメーション:', animationEnabled ? 'ON' : 'OFF');
-            
-            const objects = document.querySelectorAll('#ar-objects [animation]');
-            objects.forEach(obj => {
-                if (animationEnabled) {
-                    obj.setAttribute('animation', obj.getAttribute('animation'));
-                } else {
-                    obj.removeAttribute('animation');
-                }
+                updateDebug('Marker lost');
+                document.getElementById('status').textContent = 'マーカーを探しています 🔍';
             });
             
-            showFeedback(`アニメーション${animationEnabled ? 'ON' : 'OFF'}`);
-        }
-        
-        // フィードバック表示
-        function showFeedback(message) {
-            const feedback = document.createElement('div');
-            feedback.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0,0,0,0.8);
-                color: white;
-                padding: 15px 25px;
-                border-radius: 25px;
-                z-index: 9999;
-                font-size: 16px;
-                pointer-events: none;
-            `;
-            feedback.textContent = message;
-            document.body.appendChild(feedback);
+            // シーンイベント
+            scene.addEventListener('arjs-video-loaded', function() {
+                console.log('カメラ映像読み込み完了');
+                updateDebug('Camera loaded');
+                document.getElementById('status').textContent = 'カメラ準備完了 📹';
+            });
             
+            scene.addEventListener('camera-error', function(error) {
+                console.error('カメラエラー:', error);
+                updateDebug('Camera error: ' + error);
+                document.getElementById('status').textContent = 'カメラエラー ❌';
+            });
+            
+            // 初期化完了
             setTimeout(() => {
-                feedback.remove();
+                updateDebug('Init complete');
+                document.getElementById('status').textContent = 'HIROマーカーをカメラに向けてください';
             }, 2000);
+        });
+        
+        // 色変更
+        function changeColor() {
+            if (!box) return;
+            colorIndex = (colorIndex + 1) % colors.length;
+            box.setAttribute('color', colors[colorIndex]);
+            updateDebug('Color changed to: ' + colors[colorIndex]);
         }
         
-        // デバッグ情報
-        console.log('WebAR Demo 初期化完了');
-        console.log('HTTPS:', location.protocol === 'https:');
-        console.log('User Agent:', navigator.userAgent);
+        // 回転切り替え
+        function toggleRotation() {
+            if (!box) return;
+            rotationEnabled = !rotationEnabled;
+            
+            if (rotationEnabled) {
+                box.emit('resume');
+                updateDebug('Rotation enabled');
+            } else {
+                box.emit('pause');
+                updateDebug('Rotation paused');
+            }
+        }
+        
+        // カメラリセット
+        function resetCamera() {
+            console.log('カメラリセット試行');
+            updateDebug('Camera reset requested');
+            
+            // シーンを再初期化
+            if (scene) {
+                scene.setAttribute('arjs', 'sourceType: webcam; sourceWidth:1280; sourceHeight:960; displayWidth: 1280; displayHeight: 960; debugUIEnabled: false;');
+            }
+        }
+        
+        // デバッグ情報更新
+        function updateDebug(message) {
+            const debugElement = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugElement.innerHTML = `${timestamp}: ${message}`;
+            console.log(`[${timestamp}] ${message}`);
+        }
         
         // エラーハンドリング
         window.addEventListener('error', function(e) {
-            console.error('WebAR Error:', e);
-            if (!arStarted) {
-                document.getElementById('status-text').innerHTML = 
-                    `❌ エラーが発生しました<br>${e.message}`;
+            console.error('Global error:', e);
+            updateDebug('Error: ' + e.message);
+            document.getElementById('status').textContent = 'エラーが発生しました';
+        });
+        
+        // ページ可視性変更
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                updateDebug('Page hidden');
+            } else {
+                updateDebug('Page visible');
             }
         });
+        
+        // カメラ権限チェック
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { min: 640, ideal: 1280 },
+                height: { min: 480, ideal: 960 }
+            } 
+        })
+        .then(function(stream) {
+            console.log('カメラ権限OK');
+            updateDebug('Camera permission granted');
+            // ストリームを即座に停止（AR.jsが管理するため）
+            stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(function(err) {
+            console.error('カメラ権限エラー:', err);
+            updateDebug('Camera permission denied: ' + err.name);
+            document.getElementById('status').innerHTML = 
+                `カメラ権限が必要です<br><small>${err.message}</small>`;
+        });
+        
+        // 初期化ログ
+        updateDebug('Script loaded');
+        console.log('WebAR Script initialized');
+        console.log('Protocol:', window.location.protocol);
+        console.log('User Agent:', navigator.userAgent);
     </script>
 </body>
 </html>
