@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Simple WebAR App</title>
-    <meta name="description" content="Simple WebAR App">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     
     <!-- A-Frame -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
@@ -15,429 +14,423 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #000;
+            overflow: hidden;
         }
         
-        #startScreen {
+        #ui {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        
-        #startScreen h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        #startScreen p {
-            font-size: 1.2em;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-        
-        .start-button {
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-size: 1.3em;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-            margin: 10px;
-        }
-        
-        .start-button:hover {
-            background: #ff5252;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-        }
-        
-        .start-button:active {
-            transform: translateY(0);
-        }
-        
-        #controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            pointer-events: none;
             z-index: 100;
-            display: none;
         }
         
-        .control-button {
-            background: rgba(255, 107, 107, 0.9);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            margin: 5px;
-            border-radius: 25px;
-            font-size: 14px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        
-        .control-button:active {
-            background: rgba(255, 82, 82, 0.9);
-        }
-        
-        #instructions {
-            position: fixed;
+        #info {
+            position: absolute;
             top: 20px;
             left: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 15px;
             border-radius: 10px;
             font-size: 14px;
-            z-index: 100;
             text-align: center;
-            display: none;
-            backdrop-filter: blur(10px);
+            pointer-events: auto;
         }
         
-        #errorMessage {
-            position: fixed;
-            top: 50%;
+        #controls {
+            position: absolute;
+            bottom: 30px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.9);
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        
+        .btn {
+            background: #4CAF50;
             color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 2000;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 60px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .btn:active {
+            background: #45a049;
+            transform: scale(0.95);
+        }
+        
+        .btn.red {
+            background: #f44336;
+        }
+        
+        .btn.red:active {
+            background: #da190b;
+        }
+        
+        #debugInfo {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 100, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            pointer-events: auto;
             display: none;
-            backdrop-filter: blur(10px);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        /* Loading animation */
-        .loader {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 4px solid #fff;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <!-- Start Screen -->
-    <div id="startScreen">
-        <h1>🚀 WebAR App</h1>
-        <p>カメラを使ったAR体験を開始します</p>
-        <div id="loadingDiv" class="hidden">
-            <div class="loader"></div>
-            <p>カメラを準備中...</p>
+    <!-- UI Layer -->
+    <div id="ui">
+        <div id="info">
+            <h3>🎯 WebAR テスト</h3>
+            <p id="status">読み込み中...</p>
+            <button id="debugBtn" class="btn" onclick="toggleDebug()">デバッグ</button>
         </div>
-        <button id="startButton" class="start-button">AR体験を開始</button>
-        <button id="noMarkerButton" class="start-button">マーカーなしで開始</button>
+        
+        <div id="debugInfo"></div>
+        
+        <div id="controls">
+            <button class="btn" onclick="addCube()">📦 キューブ</button>
+            <button class="btn" onclick="addSphere()">⚽ 球体</button>
+            <button class="btn" onclick="addCylinder()">🥤 円柱</button>
+            <button class="btn red" onclick="clearAll()">🗑️ クリア</button>
+        </div>
     </div>
     
-    <!-- Instructions -->
-    <div id="instructions">
-        <p>📱 画面をタップして3Dオブジェクトを配置</p>
-    </div>
-    
-    <!-- Controls -->
-    <div id="controls">
-        <button class="control-button" onclick="addRandomCube()">🎲 キューブ</button>
-        <button class="control-button" onclick="addRandomSphere()">⚽ 球体</button>
-        <button class="control-button" onclick="clearAllObjects()">🗑️ クリア</button>
-    </div>
-    
-    <!-- Error Message -->
-    <div id="errorMessage">
-        <h3>エラーが発生しました</h3>
-        <p id="errorText"></p>
-        <button onclick="location.reload()" class="start-button">再読み込み</button>
-    </div>
-    
-    <!-- AR Scene (initially hidden) -->
+    <!-- A-Frame Scene -->
     <a-scene
-        id="arScene"
-        class="hidden"
-        embedded
-        arjs="sourceType: webcam; debugUIEnabled: false;"
+        id="scene"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; colorManagement: true; sortObjects: true;"
+        embedded
+        renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;"
         background="transparent">
         
         <!-- Assets -->
         <a-assets>
-            <!-- Preload some basic materials -->
+            <!-- Preload materials -->
+            <a-mixin id="cube-mixin" 
+                geometry="primitive: box; width: 0.4; height: 0.4; depth: 0.4"
+                material="color: #FF6B6B; metalness: 0.2; roughness: 0.8"
+                shadow="cast: true; receive: true">
+            </a-mixin>
+            <a-mixin id="sphere-mixin"
+                geometry="primitive: sphere; radius: 0.2"
+                material="color: #4ECDC4; metalness: 0.1; roughness: 0.9"
+                shadow="cast: true; receive: true">
+            </a-mixin>
+            <a-mixin id="cylinder-mixin"
+                geometry="primitive: cylinder; radius: 0.15; height: 0.6"
+                material="color: #96CEB4; metalness: 0.3; roughness: 0.7"
+                shadow="cast: true; receive: true">
+            </a-mixin>
         </a-assets>
         
         <!-- Lighting -->
-        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
-        <a-light type="directional" position="0 1 1" color="#ffffff" intensity="0.6"></a-light>
+        <a-light type="ambient" color="#404040" intensity="0.5"></a-light>
+        <a-light type="directional" position="1 4 3" color="#ffffff" intensity="0.8" shadow="cast: true"></a-light>
+        <a-light type="point" position="0 2 0" color="#ffffff" intensity="0.3"></a-light>
         
         <!-- Camera -->
-        <a-camera-static></a-camera-static>
-    </a-scene>
-    
-    <!-- No-marker AR Scene -->
-    <a-scene
-        id="noMarkerScene"
-        class="hidden"
-        embedded
-        vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; colorManagement: true;">
+        <a-entity camera></a-entity>
         
-        <!-- Sky -->
-        <a-sky color="#87CEEB"></a-sky>
+        <!-- Ground plane (invisible but receives shadows) -->
+        <a-plane position="0 -1 0" rotation="-90 0 0" width="20" height="20" 
+                 material="color: white; transparent: true; opacity: 0.1" 
+                 shadow="receive: true"></a-plane>
         
-        <!-- Ground -->
-        <a-plane position="0 -2 0" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" shadow></a-plane>
+        <!-- Default objects for testing -->
+        <a-box id="testCube" 
+               position="0 0.5 -1.5" 
+               color="#FF6B6B" 
+               shadow="cast: true"
+               animation="property: rotation; to: 0 360 0; loop: true; dur: 5000">
+        </a-box>
         
-        <!-- Lighting -->
-        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
-        <a-light type="directional" position="2 4 2" color="#ffffff" intensity="0.6" shadow></a-light>
+        <a-sphere id="testSphere" 
+                  position="0.8 0.7 -2" 
+                  radius="0.2" 
+                  color="#4ECDC4" 
+                  shadow="cast: true"
+                  animation="property: position; to: 0.8 1.2 -2; direction: alternate; loop: true; dur: 2000">
+        </a-sphere>
         
-        <!-- Camera with controls -->
-        <a-entity id="cameraRig" position="0 1.6 3">
-            <a-camera look-controls wasd-controls></a-camera>
-        </a-entity>
-        
-        <!-- Initial objects -->
-        <a-box position="0 0.5 -3" rotation="0 45 0" color="#FF6B6B" shadow
-               animation="property: rotation; to: 0 405 0; loop: true; dur: 4000"></a-box>
-        <a-sphere position="2 1.25 -5" radius="0.5" color="#4ECDC4" shadow
-                  animation="property: position; to: 2 2.25 -5; direction: alternate; loop: true; dur: 2000"></a-sphere>
-        <a-cylinder position="-2 0.75 -3" radius="0.5" height="1.5" color="#96CEB4" shadow></a-cylinder>
+        <a-cylinder id="testCylinder" 
+                    position="-0.8 0.5 -2" 
+                    radius="0.15" 
+                    height="0.6" 
+                    color="#96CEB4" 
+                    shadow="cast: true"
+                    animation="property: rotation; to: 0 0 360; loop: true; dur: 3000">
+        </a-cylinder>
     </a-scene>
 
     <script>
-        let currentScene = null;
+        let scene;
         let objectCount = 0;
-        let isARActive = false;
+        let debugMode = false;
+        let debugLog = [];
         
-        // DOM elements
-        const startScreen = document.getElementById('startScreen');
-        const startButton = document.getElementById('startButton');
-        const noMarkerButton = document.getElementById('noMarkerButton');
-        const loadingDiv = document.getElementById('loadingDiv');
-        const arScene = document.getElementById('arScene');
-        const noMarkerScene = document.getElementById('noMarkerScene');
-        const instructions = document.getElementById('instructions');
-        const controls = document.getElementById('controls');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        
-        // Show error function
-        function showError(message) {
-            console.error('Error:', message);
-            errorText.textContent = message;
-            errorMessage.style.display = 'block';
-            loadingDiv.classList.add('hidden');
+        // Logging function
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry);
+            debugLog.push(logEntry);
+            
+            // Keep only last 20 log entries
+            if (debugLog.length > 20) {
+                debugLog.shift();
+            }
+            
+            updateDebugDisplay();
         }
         
-        // Hide start screen and show AR
-        function hideStartScreen() {
-            startScreen.style.display = 'none';
-            instructions.style.display = 'block';
-            controls.style.display = 'block';
-            isARActive = true;
+        // Update debug display
+        function updateDebugDisplay() {
+            if (debugMode) {
+                const debugDiv = document.getElementById('debugInfo');
+                debugDiv.innerHTML = debugLog.join('<br>');
+                debugDiv.scrollTop = debugDiv.scrollHeight;
+            }
         }
         
-        // Start AR with camera
-        async function startAR() {
-            try {
-                console.log('Starting AR...');
-                loadingDiv.classList.remove('hidden');
-                startButton.style.display = 'none';
-                noMarkerButton.style.display = 'none';
+        // Toggle debug panel
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.style.display = debugMode ? 'block' : 'none';
+            
+            if (debugMode) {
+                log('Debug mode enabled');
+                checkSceneStatus();
+            }
+        }
+        
+        // Check scene status
+        function checkSceneStatus() {
+            if (scene) {
+                const entities = scene.querySelectorAll('a-entity, a-box, a-sphere, a-cylinder');
+                log(`Scene loaded. Total entities: ${entities.length}`);
                 
-                // Check if camera is available
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('カメラがサポートされていません');
+                // Check camera
+                const camera = scene.querySelector('[camera]');
+                if (camera) {
+                    log('Camera found');
+                } else {
+                    log('WARNING: No camera found');
                 }
                 
-                // Request camera permission
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280, max: 1920 },
-                        height: { ideal: 720, max: 1080 }
-                    } 
-                });
-                
-                console.log('Camera access granted');
-                
-                // Stop the stream temporarily as AR.js will handle it
-                stream.getTracks().forEach(track => track.stop());
-                
-                // Show AR scene
-                arScene.classList.remove('hidden');
-                currentScene = arScene;
-                
-                // Wait a bit for AR.js to initialize
-                setTimeout(() => {
-                    hideStartScreen();
-                    console.log('AR initialized');
-                }, 2000);
-                
-                // Add touch/click listeners for object placement
-                document.addEventListener('touchstart', handleTouch, { passive: false });
-                document.addEventListener('click', handleClick);
-                
-            } catch (error) {
-                console.error('AR initialization failed:', error);
-                showError(`カメラアクセスエラー: ${error.message}\n\nブラウザでカメラの許可を与えてください。`);
-            }
-        }
-        
-        // Start no-marker mode (fallback)
-        function startNoMarker() {
-            console.log('Starting no-marker mode...');
-            loadingDiv.classList.remove('hidden');
-            startButton.style.display = 'none';
-            noMarkerButton.style.display = 'none';
-            
-            setTimeout(() => {
-                noMarkerScene.classList.remove('hidden');
-                currentScene = noMarkerScene;
-                hideStartScreen();
-                console.log('No-marker mode initialized');
-            }, 1000);
-            
-            // Add touch/click listeners
-            document.addEventListener('touchstart', handleTouch, { passive: false });
-            document.addEventListener('click', handleClick);
-        }
-        
-        // Handle touch events
-        function handleTouch(event) {
-            if (!isARActive || event.target.tagName === 'BUTTON') return;
-            
-            event.preventDefault();
-            const touch = event.touches[0];
-            addObjectAtRandomPosition();
-        }
-        
-        // Handle click events
-        function handleClick(event) {
-            if (!isARActive || event.target.tagName === 'BUTTON') return;
-            
-            addObjectAtRandomPosition();
-        }
-        
-        // Add object at random position
-        function addObjectAtRandomPosition() {
-            if (Math.random() > 0.5) {
-                addRandomCube();
+                // Check AR.js status
+                if (scene.systems && scene.systems.arjs) {
+                    log('AR.js system detected');
+                } else {
+                    log('WARNING: AR.js system not detected');
+                }
             } else {
-                addRandomSphere();
+                log('ERROR: Scene not initialized');
             }
         }
         
-        // Add random cube
-        function addRandomCube() {
-            if (!currentScene) return;
+        // Add cube
+        function addCube() {
+            if (!scene) {
+                log('ERROR: Scene not ready');
+                return;
+            }
             
             const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             
             const cube = document.createElement('a-box');
-            cube.setAttribute('position', getRandomPosition());
-            cube.setAttribute('rotation', `${Math.random() * 360} ${Math.random() * 360} ${Math.random() * 360}`);
-            cube.setAttribute('scale', `${0.3 + Math.random() * 0.4} ${0.3 + Math.random() * 0.4} ${0.3 + Math.random() * 0.4}`);
-            cube.setAttribute('color', randomColor);
-            cube.setAttribute('shadow', '');
-            cube.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: ' + (3000 + Math.random() * 3000));
-            cube.setAttribute('id', `object-${objectCount++}`);
+            const x = (Math.random() - 0.5) * 3;
+            const y = Math.random() * 0.5 + 0.2;
+            const z = -1 - Math.random() * 2;
             
-            currentScene.appendChild(cube);
-            console.log('Added cube:', cube.id);
+            cube.setAttribute('position', `${x} ${y} ${z}`);
+            cube.setAttribute('color', randomColor);
+            cube.setAttribute('shadow', 'cast: true');
+            cube.setAttribute('width', '0.4');
+            cube.setAttribute('height', '0.4');
+            cube.setAttribute('depth', '0.4');
+            cube.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 4000');
+            cube.setAttribute('id', `cube-${objectCount++}`);
+            
+            scene.appendChild(cube);
+            log(`Added cube at position: ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
         }
         
-        // Add random sphere
-        function addRandomSphere() {
-            if (!currentScene) return;
+        // Add sphere
+        function addSphere() {
+            if (!scene) {
+                log('ERROR: Scene not ready');
+                return;
+            }
             
             const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             
             const sphere = document.createElement('a-sphere');
-            sphere.setAttribute('position', getRandomPosition());
-            sphere.setAttribute('radius', 0.2 + Math.random() * 0.3);
-            sphere.setAttribute('color', randomColor);
-            sphere.setAttribute('shadow', '');
-            sphere.setAttribute('animation', 'property: position; to: ' + getRandomPosition() + '; direction: alternate; loop: true; dur: ' + (2000 + Math.random() * 2000));
-            sphere.setAttribute('id', `object-${objectCount++}`);
+            const x = (Math.random() - 0.5) * 3;
+            const y = Math.random() * 0.5 + 0.2;
+            const z = -1 - Math.random() * 2;
             
-            currentScene.appendChild(sphere);
-            console.log('Added sphere:', sphere.id);
+            sphere.setAttribute('position', `${x} ${y} ${z}`);
+            sphere.setAttribute('color', randomColor);
+            sphere.setAttribute('shadow', 'cast: true');
+            sphere.setAttribute('radius', '0.2');
+            sphere.setAttribute('animation', 'property: position; to: ' + x + ' ' + (y + 0.5) + ' ' + z + '; direction: alternate; loop: true; dur: 2500');
+            sphere.setAttribute('id', `sphere-${objectCount++}`);
+            
+            scene.appendChild(sphere);
+            log(`Added sphere at position: ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
         }
         
-        // Get random position
-        function getRandomPosition() {
-            const x = (Math.random() - 0.5) * 4;
-            const y = Math.random() * 2;
-            const z = -1 - Math.random() * 4;
-            return `${x} ${y} ${z}`;
+        // Add cylinder
+        function addCylinder() {
+            if (!scene) {
+                log('ERROR: Scene not ready');
+                return;
+            }
+            
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            const cylinder = document.createElement('a-cylinder');
+            const x = (Math.random() - 0.5) * 3;
+            const y = Math.random() * 0.3 + 0.3;
+            const z = -1 - Math.random() * 2;
+            
+            cylinder.setAttribute('position', `${x} ${y} ${z}`);
+            cylinder.setAttribute('color', randomColor);
+            cylinder.setAttribute('shadow', 'cast: true');
+            cylinder.setAttribute('radius', '0.15');
+            cylinder.setAttribute('height', '0.6');
+            cylinder.setAttribute('animation', 'property: rotation; to: 0 0 360; loop: true; dur: 3500');
+            cylinder.setAttribute('id', `cylinder-${objectCount++}`);
+            
+            scene.appendChild(cylinder);
+            log(`Added cylinder at position: ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
         }
         
         // Clear all objects
-        function clearAllObjects() {
-            if (!currentScene) return;
+        function clearAll() {
+            if (!scene) {
+                log('ERROR: Scene not ready');
+                return;
+            }
             
-            const objects = currentScene.querySelectorAll('[id^="object-"]');
-            objects.forEach(obj => {
-                console.log('Removing:', obj.id);
+            const userObjects = scene.querySelectorAll('[id^="cube-"], [id^="sphere-"], [id^="cylinder-"]');
+            userObjects.forEach((obj, index) => {
                 obj.remove();
             });
+            
+            log(`Cleared ${userObjects.length} user objects`);
             objectCount = 0;
-            console.log('Cleared all objects');
         }
         
-        // Event listeners
-        startButton.addEventListener('click', startAR);
-        noMarkerButton.addEventListener('click', startNoMarker);
+        // Update status
+        function updateStatus(message) {
+            const statusEl = document.getElementById('status');
+            if (statusEl) {
+                statusEl.textContent = message;
+            }
+            log(message);
+        }
         
-        // Prevent default touch behaviors
-        document.addEventListener('touchmove', (e) => {
-            if (isARActive) e.preventDefault();
-        }, { passive: false });
-        
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && isARActive) {
-                console.log('Page hidden, pausing AR');
-            } else if (!document.hidden && isARActive) {
-                console.log('Page visible, resuming AR');
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            log('DOM loaded');
+            updateStatus('初期化中...');
+            
+            // Wait for A-Frame to load
+            if (typeof AFRAME !== 'undefined') {
+                initializeAR();
+            } else {
+                log('Waiting for A-Frame...');
+                setTimeout(initializeAR, 1000);
             }
         });
         
-        console.log('WebAR App loaded');
+        // Initialize AR
+        function initializeAR() {
+            scene = document.querySelector('a-scene');
+            
+            if (!scene) {
+                log('ERROR: Scene element not found');
+                updateStatus('エラー: シーンが見つかりません');
+                return;
+            }
+            
+            log('Scene element found');
+            
+            // Wait for scene to be ready
+            if (scene.hasLoaded) {
+                onSceneReady();
+            } else {
+                scene.addEventListener('loaded', onSceneReady);
+            }
+            
+            // Add error handling
+            scene.addEventListener('renderstart', () => {
+                log('Render started');
+            });
+            
+            // Check for AR.js
+            setTimeout(() => {
+                if (window.ARjs) {
+                    log('AR.js library loaded');
+                    updateStatus('カメラ準備中...');
+                } else {
+                    log('WARNING: AR.js not detected');
+                    updateStatus('AR.js読み込みエラー');
+                }
+            }, 2000);
+        }
+        
+        // Scene ready callback
+        function onSceneReady() {
+            log('Scene ready');
+            updateStatus('AR準備完了 - オブジェクトを追加してください');
+            
+            // Add some test visibility
+            setTimeout(() => {
+                const testObjects = scene.querySelectorAll('#testCube, #testSphere, #testCylinder');
+                log(`Test objects visible: ${testObjects.length}`);
+                
+                if (testObjects.length === 0) {
+                    log('WARNING: Test objects not found');
+                }
+            }, 1000);
+        }
+        
+        // Handle errors
+        window.addEventListener('error', (event) => {
+            log(`JavaScript Error: ${event.error?.message || event.message}`);
+        });
+        
+        // Handle unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`Promise Rejection: ${event.reason}`);
+        });
+        
+        log('Script loaded');
     </script>
 </body>
 </html>
