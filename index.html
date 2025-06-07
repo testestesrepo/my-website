@@ -3,63 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>マーカーレスWebAR</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe-ar.js"></script>
+    <title>シンプルマーカーレスAR</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
             font-family: Arial, sans-serif;
             background: #000;
+            overflow: hidden;
+        }
+        
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 1;
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+            pointer-events: none;
         }
         
         #ui {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 20px;
+            left: 20px;
+            right: 20px;
             z-index: 1000;
-            padding: 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-        }
-        
-        #instructions {
+            background: rgba(0,0,0,0.7);
             color: white;
+            padding: 15px;
+            border-radius: 10px;
             text-align: center;
-            margin-bottom: 20px;
         }
         
-        #startButton {
-            display: block;
-            margin: 0 auto;
-            padding: 15px 30px;
+        #controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            padding: 15px 20px;
             background: #4CAF50;
             color: white;
             border: none;
             border-radius: 25px;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s;
+            min-width: 120px;
         }
         
-        #startButton:hover {
+        .control-btn:hover {
             background: #45a049;
             transform: scale(1.05);
         }
         
-        #startButton:disabled {
+        .control-btn:disabled {
             background: #666;
             cursor: not-allowed;
             transform: none;
         }
         
+        .control-btn.secondary {
+            background: #FF6B6B;
+        }
+        
+        .control-btn.secondary:hover {
+            background: #ff5252;
+        }
+        
         #status {
             position: fixed;
-            bottom: 20px;
+            bottom: 120px;
             left: 20px;
             right: 20px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             color: white;
             padding: 15px;
             border-radius: 10px;
@@ -67,256 +104,365 @@
             z-index: 1000;
         }
         
-        #placeButton {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 30px;
-            background: #FF6B6B;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            z-index: 1000;
-            display: none;
-        }
-        
         .hidden {
             display: none !important;
         }
         
-        a-scene {
-            width: 100vw;
-            height: 100vh;
+        #instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 2000;
+            max-width: 90vw;
+        }
+        
+        #startBtn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
+    <div id="instructions">
+        <h2>📱 マーカーレスAR</h2>
+        <p>カメラを使って3Dオブジェクトを配置します</p>
+        <ul style="text-align: left; margin: 15px 0;">
+            <li>🎯 画面をタップしてオブジェクト配置</li>
+            <li>🔄 配置したオブジェクトをタップで削除</li>
+            <li>🎨 複数の形状がランダムに配置されます</li>
+        </ul>
+        <button id="startBtn">ARを開始</button>
+    </div>
+    
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+    
     <div id="ui">
-        <div id="instructions">
-            <h2>🌟 マーカーレスWebAR</h2>
-            <p>床や平面を検出して3Dオブジェクトを配置します</p>
-        </div>
-        <button id="startButton">ARを開始</button>
+        <h3>🌟 マーカーレスAR</h3>
+        <p>オブジェクト数: <span id="objectCount">0</span></p>
     </div>
     
-    <div id="status">
-        WebXRをサポートしているか確認中...
+    <div id="controls" class="hidden">
+        <button class="control-btn" id="placeBtn">🎯 配置</button>
+        <button class="control-btn secondary" id="clearBtn">🗑️ 全削除</button>
     </div>
     
-    <button id="placeButton">🎯 オブジェクトを配置</button>
-    
-    <a-scene 
-        id="scene"
-        embedded 
-        style="height: 100vh; width: 100vw;"
-        webxr="requiredFeatures: hit-test,local-floor;
-               optionalFeatures: dom-overlay,unbounded;
-               overlayElement: #ui;"
-        renderer="colorManagement: true; physicallyCorrectLights: true;"
-        background="color: transparent;">
-        
-        <!-- アセット定義 -->
-        <a-assets>
-            <a-mixin id="cube" 
-                     geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
-                     material="color: #FF6B6B; roughness: 0.3; metalness: 0.1"
-                     animation="property: rotation; to: 0 360 0; loop: true; dur: 3000">
-            </a-mixin>
-            
-            <a-mixin id="sphere" 
-                     geometry="primitive: sphere; radius: 0.05"
-                     material="color: #4ECDC4; roughness: 0.2; metalness: 0.3"
-                     animation="property: position; to: 0 0.2 0; dir: alternate; loop: true; dur: 2000">
-            </a-mixin>
-            
-            <a-mixin id="pyramid" 
-                     geometry="primitive: cone; radiusBottom: 0.05; radiusTop: 0; height: 0.1"
-                     material="color: #FFE66D; roughness: 0.4; metalness: 0.2"
-                     animation="property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1500">
-            </a-mixin>
-        </a-assets>
-        
-        <!-- 照明 -->
-        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
-        <a-light type="directional" 
-                 position="1 1 1" 
-                 color="#ffffff" 
-                 intensity="0.8"
-                 shadow="cast: true; type: pcf">
-        </a-light>
-        
-        <!-- カメラ -->
-        <a-camera 
-            id="camera"
-            position="0 1.6 0"
-            look-controls="enabled: false"
-            wasd-controls="enabled: false"
-            cursor="rayOrigin: mouse">
-        </a-camera>
-        
-        <!-- 床面のプレーン（目安用） -->
-        <a-plane 
-            id="floor" 
-            position="0 0 0" 
-            rotation="-90 0 0" 
-            width="4" 
-            height="4" 
-            material="color: #333; transparent: true; opacity: 0.1"
-            visible="false">
-        </a-plane>
-    </a-scene>
+    <div id="status" class="hidden">
+        画面をタップしてオブジェクトを配置してください
+    </div>
 
     <script>
-        let scene, camera;
+        let video, canvas, ctx;
         let isARActive = false;
-        let objectCount = 0;
-        let hitTestSource = null;
-        let hitTestSourceRequested = false;
+        let objects = [];
+        let objectIdCounter = 0;
         
-        // UI要素の取得
-        const startButton = document.getElementById('startButton');
-        const placeButton = document.getElementById('placeButton');
-        const statusDiv = document.getElementById('status');
+        // オブジェクトの種類定義
+        const objectTypes = [
+            { type: 'cube', color: '#FF6B6B', size: 40 },
+            { type: 'circle', color: '#4ECDC4', size: 35 },
+            { type: 'triangle', color: '#FFE66D', size: 45 },
+            { type: 'diamond', color: '#95E1D3', size: 40 },
+            { type: 'star', color: '#F38BA8', size: 50 }
+        ];
+        
+        // DOM要素の取得
+        const instructionsDiv = document.getElementById('instructions');
+        const startBtn = document.getElementById('startBtn');
         const ui = document.getElementById('ui');
+        const controls = document.getElementById('controls');
+        const status = document.getElementById('status');
+        const placeBtn = document.getElementById('placeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const objectCountSpan = document.getElementById('objectCount');
         
-        // A-Frameシーンの取得
-        scene = document.getElementById('scene');
-        
-        // WebXRサポートチェック
-        async function checkWebXRSupport() {
-            if (!navigator.xr) {
-                statusDiv.textContent = '❌ このブラウザはWebXRをサポートしていません';
-                startButton.disabled = true;
-                return false;
-            }
+        // 初期化
+        function init() {
+            video = document.getElementById('video');
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
             
-            try {
-                const supported = await navigator.xr.isSessionSupported('immersive-ar');
-                if (supported) {
-                    statusDiv.textContent = '✅ WebXR AR対応デバイスです！';
-                    return true;
-                } else {
-                    statusDiv.textContent = '❌ AR機能がサポートされていません';
-                    startButton.disabled = true;
-                    return false;
-                }
-            } catch (error) {
-                console.error('WebXRサポートチェックエラー:', error);
-                statusDiv.textContent = '❌ WebXRチェック中にエラーが発生しました';
-                startButton.disabled = true;
-                return false;
-            }
+            // キャンバスサイズの設定
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // イベントリスナー
+            startBtn.addEventListener('click', startAR);
+            placeBtn.addEventListener('click', placeRandomObject);
+            clearBtn.addEventListener('click', clearAllObjects);
+            canvas.addEventListener('click', handleCanvasClick);
+            
+            // タッチイベント（モバイル対応）
+            canvas.addEventListener('touchstart', handleTouch);
+        }
+        
+        // キャンバスサイズ調整
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
         
         // ARセッション開始
         async function startAR() {
             try {
-                statusDiv.textContent = '🔄 ARセッションを開始しています...';
-                startButton.disabled = true;
+                // カメラアクセス要求
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment', // 背面カメラ
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
                 
-                // A-FrameのWebXRシステムを使用してARを開始
-                const sceneEl = document.querySelector('a-scene');
-                if (sceneEl.xrSession) {
-                    statusDiv.textContent = '⚠️ ARセッションは既に開始されています';
-                    return;
-                }
+                video.srcObject = stream;
+                video.play();
                 
-                // WebXRセッションの開始を試行
-                await sceneEl.enterVR();
+                // UI切り替え
+                instructionsDiv.classList.add('hidden');
+                controls.classList.remove('hidden');
+                status.classList.remove('hidden');
                 
                 isARActive = true;
-                statusDiv.textContent = '📱 カメラを床や平面に向けてください';
-                placeButton.style.display = 'block';
-                ui.style.display = 'none';
+                
+                // 描画ループ開始
+                requestAnimationFrame(render);
+                
+                status.textContent = '✅ ARが開始されました！画面をタップしてオブジェクトを配置';
                 
             } catch (error) {
-                console.error('ARセッション開始エラー:', error);
-                statusDiv.textContent = '❌ ARセッションの開始に失敗しました';
-                startButton.disabled = false;
-                
-                // フォールバック: 通常のカメラビューで動作
-                startCameraFallback();
+                console.error('カメラアクセスエラー:', error);
+                alert('カメラにアクセスできませんでした。ブラウザの設定を確認してください。');
             }
         }
         
-        // カメラフォールバック（WebXRが使用できない場合）
-        function startCameraFallback() {
-            statusDiv.textContent = '📷 カメラモードで動作中（画面をタップしてオブジェクトを配置）';
-            placeButton.style.display = 'block';
-            ui.style.display = 'none';
-            isARActive = true;
-            
-            // 床面を表示
-            const floor = document.getElementById('floor');
-            floor.setAttribute('visible', true);
-        }
-        
-        // オブジェクトの配置
-        function placeObject() {
+        // メインレンダリングループ
+        function render() {
             if (!isARActive) return;
             
-            objectCount++;
-            const objectTypes = ['cube', 'sphere', 'pyramid'];
-            const randomType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // ランダムな位置に配置
-            const x = (Math.random() - 0.5) * 2;
-            const z = (Math.random() - 0.5) * 2;
-            const y = 0.05;
-            
-            // 新しいオブジェクトを作成
-            const entity = document.createElement('a-entity');
-            entity.setAttribute('mixin', randomType);
-            entity.setAttribute('position', `${x} ${y} ${z}`);
-            entity.setAttribute('id', `object-${objectCount}`);
-            
-            // クリックで削除する機能を追加
-            entity.addEventListener('click', function() {
-                this.remove();
+            // オブジェクトを描画
+            objects.forEach(obj => {
+                drawObject(obj);
             });
             
-            scene.appendChild(entity);
-            
-            // フィードバック
-            statusDiv.textContent = `🎉 オブジェクト${objectCount}を配置しました！（タップで削除）`;
-            
-            // 3秒後にステータスを元に戻す
-            setTimeout(() => {
-                if (isARActive) {
-                    statusDiv.textContent = '👆 画面をタップしてオブジェクトを配置';
-                }
-            }, 3000);
+            requestAnimationFrame(render);
         }
         
-        // イベントリスナー
-        startButton.addEventListener('click', startAR);
-        placeButton.addEventListener('click', placeObject);
-        
-        // 画面タップでもオブジェクトを配置
-        document.addEventListener('click', function(event) {
-            if (isARActive && !event.target.closest('button')) {
-                placeObject();
+        // オブジェクト描画
+        function drawObject(obj) {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+            ctx.rotate(obj.rotation);
+            
+            // 影の効果
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+            
+            ctx.fillStyle = obj.color;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            
+            switch(obj.type) {
+                case 'cube':
+                    drawCube(obj.size);
+                    break;
+                case 'circle':
+                    drawCircle(obj.size);
+                    break;
+                case 'triangle':
+                    drawTriangle(obj.size);
+                    break;
+                case 'diamond':
+                    drawDiamond(obj.size);
+                    break;
+                case 'star':
+                    drawStar(obj.size);
+                    break;
             }
-        });
+            
+            ctx.restore();
+            
+            // アニメーション更新
+            obj.rotation += obj.rotationSpeed;
+            obj.scale = 1 + Math.sin(obj.animationTime) * 0.1;
+            obj.animationTime += 0.05;
+        }
         
-        // ページ読み込み時の初期化
-        window.addEventListener('load', async function() {
-            await checkWebXRSupport();
-        });
+        // 各形状の描画関数
+        function drawCube(size) {
+            const s = size / 2;
+            ctx.fillRect(-s, -s, size, size);
+            ctx.strokeRect(-s, -s, size, size);
+        }
         
-        // A-Frameシーンの準備完了時
-        scene.addEventListener('loaded', function() {
-            console.log('A-Frameシーンが読み込まれました');
-        });
+        function drawCircle(size) {
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
         
-        // エラーハンドリング
-        window.addEventListener('error', function(e) {
-            console.error('エラーが発生しました:', e.error);
-            statusDiv.textContent = '❌ アプリケーションエラーが発生しました';
-        });
+        function drawTriangle(size) {
+            const s = size / 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -s);
+            ctx.lineTo(-s, s);
+            ctx.lineTo(s, s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        function drawDiamond(size) {
+            const s = size / 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -s);
+            ctx.lineTo(s, 0);
+            ctx.lineTo(0, s);
+            ctx.lineTo(-s, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        function drawStar(size) {
+            const s = size / 2;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI) / 5;
+                const x = Math.cos(angle) * s;
+                const y = Math.sin(angle) * s;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        // ランダムオブジェクト配置
+        function placeRandomObject() {
+            const objType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+            const x = Math.random() * (canvas.width - 100) + 50;
+            const y = Math.random() * (canvas.height - 200) + 100;
+            
+            addObject(x, y, objType);
+        }
+        
+        // オブジェクト追加
+        function addObject(x, y, objType) {
+            const obj = {
+                id: ++objectIdCounter,
+                x: x,
+                y: y,
+                type: objType.type,
+                color: objType.color,
+                size: objType.size,
+                rotation: 0,
+                rotationSpeed: (Math.random() - 0.5) * 0.1,
+                scale: 1,
+                animationTime: 0
+            };
+            
+            objects.push(obj);
+            updateObjectCount();
+            
+            // フィードバック
+            status.textContent = `🎉 ${obj.type}を配置しました！（オブジェクトをタップで削除）`;
+            setTimeout(() => {
+                status.textContent = '画面をタップしてオブジェクトを配置してください';
+            }, 2000);
+        }
+        
+        // キャンバスクリックハンドラ
+        function handleCanvasClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // オブジェクトがクリックされたかチェック
+            const clickedObject = findObjectAt(x, y);
+            if (clickedObject) {
+                removeObject(clickedObject.id);
+            } else {
+                // 新しいオブジェクトを配置
+                const objType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+                addObject(x, y, objType);
+            }
+        }
+        
+        // タッチイベントハンドラ
+        function handleTouch(event) {
+            event.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = event.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            const clickedObject = findObjectAt(x, y);
+            if (clickedObject) {
+                removeObject(clickedObject.id);
+            } else {
+                const objType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+                addObject(x, y, objType);
+            }
+        }
+        
+        // 座標でオブジェクトを検索
+        function findObjectAt(x, y) {
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                const distance = Math.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2);
+                if (distance < obj.size / 2) {
+                    return obj;
+                }
+            }
+            return null;
+        }
+        
+        // オブジェクト削除
+        function removeObject(id) {
+            objects = objects.filter(obj => obj.id !== id);
+            updateObjectCount();
+            status.textContent = '🗑️ オブジェクトを削除しました';
+            setTimeout(() => {
+                status.textContent = '画面をタップしてオブジェクトを配置してください';
+            }, 1500);
+        }
+        
+        // 全オブジェクト削除
+        function clearAllObjects() {
+            objects = [];
+            updateObjectCount();
+            status.textContent = '🧹 すべてのオブジェクトを削除しました';
+            setTimeout(() => {
+                status.textContent = '画面をタップしてオブジェクトを配置してください';
+            }, 2000);
+        }
+        
+        // オブジェクトカウント更新
+        function updateObjectCount() {
+            objectCountSpan.textContent = objects.length;
+        }
+        
+        // 初期化実行
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
