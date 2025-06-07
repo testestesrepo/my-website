@@ -1,100 +1,617 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Complete WebXR AR Demo</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aframe-ar-hit-test@1.0.2/dist/aframe-ar-hit-test.min.js"></script>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互換性重視WebAR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: sans-serif;
-      }
-      #gui {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 999;
-        background: rgba(255, 255, 255, 0.8);
-        padding: 10px;
-        border-radius: 8px;
-      }
-      #gui button {
-        margin: 5px;
-        padding: 8px 12px;
-        font-size: 14px;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #cameraContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+        
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+        
+        #imagePreview {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            display: none;
+        }
+        
+        #threeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 20px;
+            border-radius: 20px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        #controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 15px 25px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 120px;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+        }
+        
+        .control-btn.primary {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
+        }
+        
+        .control-btn.primary:hover {
+            box-shadow: 0 15px 35px rgba(78, 205, 196, 0.4);
+        }
+        
+        .control-btn.special {
+            background: linear-gradient(45deg, #9c27b0, #673ab7);
+            box-shadow: 0 8px 25px rgba(156, 39, 176, 0.3);
+        }
+        
+        .control-btn.special:hover {
+            box-shadow: 0 15px 35px rgba(156, 39, 176, 0.4);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        #status {
+            position: fixed;
+            bottom: 130px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+            backdrop-filter: blur(15px);
+            font-size: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .method-selector {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            z-index: 2000;
+            max-width: 90vw;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .method-btn {
+            display: block;
+            width: 100%;
+            margin: 15px 0;
+            padding: 20px;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
+        }
+        
+        .method-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(78, 205, 196, 0.4);
+        }
+        
+        .method-btn.alternative {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        }
+        
+        .method-btn.alternative:hover {
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .compatibility-info {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
     </style>
-  </head>
-  <body>
-    <!-- GUI -->
-    <div id="gui">
-      <button id="cubeButton">Cube</button>
-      <button id="sphereButton">Sphere</button>
+</head>
+<body>
+    <div class="method-selector" id="methodSelector">
+        <h2>🚀 WebAR起動方法</h2>
+        <p>お使いのデバイスに最適な方法を選択してください</p>
+        
+        <button class="method-btn" id="cameraBtn">
+            📹 リアルタイムカメラ
+            <br><small>最新ブラウザ推奨</small>
+        </button>
+        
+        <button class="method-btn alternative" id="imageBtn">
+            📸 画像アップロード
+            <br><small>全ブラウザ対応</small>
+        </button>
+        
+        <div class="compatibility-info">
+            <p><strong>推奨環境:</strong></p>
+            <p>Chrome 60+, Firefox 55+, Safari 11+</p>
+            <p>Android 7+, iOS 11+</p>
+        </div>
+        
+        <input type="file" id="fileInput" accept="image/*" capture="environment">
+    </div>
+    
+    <div id="cameraContainer">
+        <video id="video" autoplay muted playsinline></video>
+        <img id="imagePreview" alt="Background">
+    </div>
+    
+    <canvas id="threeCanvas"></canvas>
+    
+    <div id="ui" class="hidden">
+        <h3>✨ 互換性重視WebAR</h3>
+        <p>オブジェクト数: <span id="objectCount">0</span></p>
+        <p id="modeDisplay">モード: リアルタイム</p>
+    </div>
+    
+    <div id="controls" class="hidden">
+        <button class="control-btn primary" id="cubeBtn">🎲 立方体</button>
+        <button class="control-btn primary" id="sphereBtn">⚡ 球体</button>
+        <button class="control-btn special" id="torusBtn">💎 リング</button>
+        <button class="control-btn" id="clearBtn">🗑️ クリア</button>
+        <button class="control-btn" id="switchBtn">🔄 切替</button>
+    </div>
+    
+    <div id="status" class="hidden">
+        デバイスを準備中...
     </div>
 
-    <!-- A-Frame Scene -->
-    <a-scene
-      xr="mode: ar;"
-      renderer="colorManagement: true; physicallyCorrectLights: true;"
-      embedded
-    >
-      <!-- 環境光 -->
-      <a-entity light="type: ambient; intensity: 1"></a-entity>
-
-      <!-- ヒットテスト用ターゲット -->
-      <a-entity id="hitTestEntity" ar-hit-test="target: #placementMarker; target-visible: false;"></a-entity>
-
-      <!-- ヒットターゲット位置表示用のマーカー（非表示にして使う） -->
-      <a-sphere
-        id="placementMarker"
-        visible="false"
-        radius="0.01"
-        color="#FFFFFF"
-      ></a-sphere>
-
-      <!-- カメラ -->
-      <a-camera></a-camera>
-    </a-scene>
-
-    <!-- JS -->
     <script>
-      let currentShape = 'box'; // 初期はbox
-      const scene = document.querySelector('a-scene');
-      const marker = document.querySelector('#placementMarker');
-
-      // GUIボタン設定
-      document.getElementById('cubeButton').addEventListener('click', () => {
-        currentShape = 'box';
-      });
-
-      document.getElementById('sphereButton').addEventListener('click', () => {
-        currentShape = 'sphere';
-      });
-
-      // タップ時の配置
-      scene.addEventListener('click', () => {
-        const position = marker.getAttribute('position');
-        let newEntity;
-
-        if (currentShape === 'box') {
-          newEntity = document.createElement('a-box');
-          newEntity.setAttribute('depth', '0.5');
-          newEntity.setAttribute('height', '0.5');
-          newEntity.setAttribute('width', '0.5');
-        } else if (currentShape === 'sphere') {
-          newEntity = document.createElement('a-sphere');
-          newEntity.setAttribute('radius', '0.25');
+        let scene, camera, renderer;
+        let objects = [];
+        let objectIdCounter = 0;
+        let currentMode = 'none'; // 'camera', 'image', 'none'
+        let raycaster, mouseVector;
+        
+        // DOM要素
+        const methodSelector = document.getElementById('methodSelector');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const imageBtn = document.getElementById('imageBtn');
+        const fileInput = document.getElementById('fileInput');
+        const video = document.getElementById('video');
+        const imagePreview = document.getElementById('imagePreview');
+        const ui = document.getElementById('ui');
+        const controls = document.getElementById('controls');
+        const status = document.getElementById('status');
+        const modeDisplay = document.getElementById('modeDisplay');
+        const objectCountSpan = document.getElementById('objectCount');
+        
+        // Three.jsオブジェクトタイプ
+        const objectTypes = {
+            cube: {
+                geometry: () => new THREE.BoxGeometry(0.8, 0.8, 0.8),
+                material: () => new THREE.MeshPhongMaterial({ 
+                    color: 0xff6b6b,
+                    shininess: 100,
+                    transparent: true,
+                    opacity: 0.9 
+                })
+            },
+            sphere: {
+                geometry: () => new THREE.SphereGeometry(0.5, 32, 32),
+                material: () => new THREE.MeshPhongMaterial({ 
+                    color: 0x4ecdc4,
+                    shininess: 100,
+                    transparent: true,
+                    opacity: 0.9 
+                })
+            },
+            torus: {
+                geometry: () => new THREE.TorusGeometry(0.4, 0.15, 16, 100),
+                material: () => new THREE.MeshPhongMaterial({ 
+                    color: 0x9c27b0,
+                    shininess: 100,
+                    transparent: true,
+                    opacity: 0.9 
+                })
+            }
+        };
+        
+        // 初期化
+        function init() {
+            setupThreeJS();
+            setupEventListeners();
+            
+            // ブラウザ互換性チェック
+            checkBrowserSupport();
         }
-
-        newEntity.setAttribute('position', position);
-        newEntity.setAttribute('color', '#'+Math.floor(Math.random()*16777215).toString(16));
-        newEntity.setAttribute('shadow', 'receive: true; cast: true;');
-        newEntity.setAttribute('animation__scale', 'property: scale; from: 0 0 0; to: 1 1 1; dur: 500; easing: easeOutElastic');
-
-        scene.appendChild(newEntity);
-      });
+        
+        // ブラウザサポートチェック
+        function checkBrowserSupport() {
+            const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            const hasFileAPI = !!(window.File && window.FileReader);
+            
+            if (!hasGetUserMedia) {
+                cameraBtn.innerHTML = '📹 カメラ未対応<br><small>この端末では利用できません</small>';
+                cameraBtn.disabled = true;
+                cameraBtn.style.opacity = '0.5';
+            }
+            
+            if (!hasFileAPI) {
+                imageBtn.innerHTML = '📸 ファイル未対応<br><small>この端末では利用できません</small>';
+                imageBtn.disabled = true;
+                imageBtn.style.opacity = '0.5';
+            }
+        }
+        
+        // Three.js セットアップ
+        function setupThreeJS() {
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.z = 5;
+            
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('threeCanvas'),
+                alpha: true,
+                antialias: true 
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // エフェクトライティング
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.7);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            directionalLight.position.set(2, 2, 2);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            const pointLight1 = new THREE.PointLight(0xff6b6b, 0.5, 100);
+            pointLight1.position.set(-2, 2, 2);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x4ecdc4, 0.5, 100);
+            pointLight2.position.set(2, -2, 2);
+            scene.add(pointLight2);
+            
+            raycaster = new THREE.Raycaster();
+            mouseVector = new THREE.Vector2();
+        }
+        
+        // イベントリスナー設定
+        function setupEventListeners() {
+            cameraBtn.addEventListener('click', startCameraMode);
+            imageBtn.addEventListener('click', startImageMode);
+            fileInput.addEventListener('change', handleImageUpload);
+            
+            document.getElementById('cubeBtn').addEventListener('click', () => addObject('cube'));
+            document.getElementById('sphereBtn').addEventListener('click', () => addObject('sphere'));
+            document.getElementById('torusBtn').addEventListener('click', () => addObject('torus'));
+            document.getElementById('clearBtn').addEventListener('click', clearAllObjects);
+            document.getElementById('switchBtn').addEventListener('click', switchMode);
+            
+            renderer.domElement.addEventListener('click', onCanvasClick);
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        // カメラモード開始
+        async function startCameraMode() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                
+                video.srcObject = stream;
+                video.style.display = 'block';
+                imagePreview.style.display = 'none';
+                
+                currentMode = 'camera';
+                showUI();
+                modeDisplay.textContent = 'モード: リアルタイムカメラ';
+                status.textContent = '📹 カメラモード開始！タップして3Dオブジェクト配置';
+                
+            } catch (error) {
+                console.error('カメラエラー:', error);
+                alert('カメラにアクセスできませんでした。画像モードをお試しください。');
+            }
+        }
+        
+        // 画像モード開始
+        function startImageMode() {
+            fileInput.click();
+        }
+        
+        // 画像アップロード処理
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    video.style.display = 'none';
+                    
+                    currentMode = 'image';
+                    showUI();
+                    modeDisplay.textContent = 'モード: 静的画像';
+                    status.textContent = '📸 画像モード開始！タップして3Dオブジェクト配置';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // UI表示
+        function showUI() {
+            methodSelector.classList.add('hidden');
+            ui.classList.remove('hidden');
+            controls.classList.remove('hidden');
+            status.classList.remove('hidden');
+            
+            animate();
+        }
+        
+        // モード切替
+        function switchMode() {
+            methodSelector.classList.remove('hidden');
+            ui.classList.add('hidden');
+            controls.classList.add('hidden');
+            status.classList.add('hidden');
+            
+            // カメラストップ
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            currentMode = 'none';
+        }
+        
+        // アニメーションループ
+        function animate() {
+            if (currentMode === 'none') return;
+            
+            requestAnimationFrame(animate);
+            
+            // ダイナミックアニメーション
+            objects.forEach((obj, index) => {
+                obj.rotation.x += 0.01;
+                obj.rotation.y += 0.01;
+                obj.rotation.z += 0.005;
+                
+                // 波動効果
+                const time = Date.now() * 0.003;
+                obj.position.y += Math.sin(time + index) * 0.003;
+                
+                // カラーシフト
+                const hue = (time + index * 0.3) % 1;
+                obj.material.color.setHSL(hue, 0.7, 0.6);
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        // オブジェクト追加
+        function addObject(type) {
+            const objType = objectTypes[type];
+            const geometry = objType.geometry();
+            const material = objType.material();
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            // ランダム配置
+            mesh.position.set(
+                (Math.random() - 0.5) * 6,
+                (Math.random() - 0.5) * 4,
+                (Math.random() - 0.5) * 3
+            );
+            
+            mesh.userData = {
+                id: ++objectIdCounter,
+                type: type,
+                birthTime: Date.now()
+            };
+            
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            scene.add(mesh);
+            objects.push(mesh);
+            
+            updateUI();
+            
+            // 生成エフェクト
+            mesh.scale.set(0, 0, 0);
+            animateScale(mesh, { x: 1, y: 1, z: 1 }, 500);
+        }
+        
+        // スケールアニメーション
+        function animateScale(object, target, duration) {
+            const start = Date.now();
+            const initialScale = { ...object.scale };
+            
+            function animate() {
+                const elapsed = Date.now() - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // イーズアウト
+                
+                object.scale.x = initialScale.x + (target.x - initialScale.x) * easeProgress;
+                object.scale.y = initialScale.y + (target.y - initialScale.y) * easeProgress;
+                object.scale.z = initialScale.z + (target.z - initialScale.z) * easeProgress;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+        
+        // キャンバスクリック
+        function onCanvasClick(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mousePos = {
+                x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                y: -((event.clientY - rect.top) / rect.height) * 2 + 1
+            };
+            
+            mouseVector.set(mousePos.x, mousePos.y);
+            raycaster.setFromCamera(mouseVector, camera);
+            
+            const intersects = raycaster.intersectObjects(objects);
+            
+            if (intersects.length > 0) {
+                // オブジェクトクリック - 削除
+                const clickedObject = intersects[0].object;
+                removeObject(clickedObject);
+            } else {
+                // 空白クリック - ランダムオブジェクト追加
+                const types = Object.keys(objectTypes);
+                const randomType = types[Math.floor(Math.random() * types.length)];
+                addObject(randomType);
+            }
+        }
+        
+        // オブジェクト削除
+        function removeObject(obj) {
+            scene.remove(obj);
+            objects = objects.filter(o => o !== obj);
+            
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) obj.material.dispose();
+            
+            updateUI();
+            status.textContent = '💥 オブジェクトを削除しました';
+            setTimeout(() => {
+                status.textContent = 'タップでオブジェクト追加、オブジェクトタップで削除';
+            }, 2000);
+        }
+        
+        // 全削除
+        function clearAllObjects() {
+            objects.forEach(obj => {
+                scene.remove(obj);
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+            objects = [];
+            updateUI();
+            
+            status.textContent = '🧹 すべてクリアしました';
+            setTimeout(() => {
+                status.textContent = 'タップでオブジェクト追加、オブジェクトタップで削除';
+            }, 2000);
+        }
+        
+        // UI更新
+        function updateUI() {
+            objectCountSpan.textContent = objects.length;
+        }
+        
+        // ウィンドウリサイズ
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // 初期化実行
+        window.addEventListener('load', init);
     </script>
-  </body>
+</body>
 </html>
