@@ -1,436 +1,322 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <title>Simple WebAR App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <!-- A-Frame -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マーカーレスWebAR</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
-    <!-- AR.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/AR.js/3.4.5/aframe-ar.min.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe-ar.js"></script>
     <style>
         body {
             margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
-            overflow: hidden;
+            background: #000;
         }
         
         #ui {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 100;
+            right: 0;
+            z-index: 1000;
+            padding: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
         
-        #info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
+        #instructions {
             color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 14px;
             text-align: center;
-            pointer-events: auto;
+            margin-bottom: 20px;
         }
         
-        #controls {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            pointer-events: auto;
-        }
-        
-        .btn {
+        #startButton {
+            display: block;
+            margin: 0 auto;
+            padding: 15px 30px;
             background: #4CAF50;
             color: white;
             border: none;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 25px;
+            font-size: 18px;
             cursor: pointer;
-            min-width: 60px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.3s;
         }
         
-        .btn:active {
+        #startButton:hover {
             background: #45a049;
-            transform: scale(0.95);
+            transform: scale(1.05);
         }
         
-        .btn.red {
-            background: #f44336;
+        #startButton:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
         }
         
-        .btn.red:active {
-            background: #da190b;
-        }
-        
-        #debugInfo {
-            position: absolute;
-            top: 120px;
+        #status {
+            position: fixed;
+            bottom: 20px;
             left: 20px;
             right: 20px;
-            background: rgba(0, 100, 0, 0.8);
+            background: rgba(0,0,0,0.7);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            font-family: monospace;
-            max-height: 200px;
-            overflow-y: auto;
-            pointer-events: auto;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+        }
+        
+        #placeButton {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1000;
             display: none;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        a-scene {
+            width: 100vw;
+            height: 100vh;
         }
     </style>
 </head>
 <body>
-    <!-- UI Layer -->
     <div id="ui">
-        <div id="info">
-            <h3>🎯 WebAR テスト</h3>
-            <p id="status">読み込み中...</p>
-            <button id="debugBtn" class="btn" onclick="toggleDebug()">デバッグ</button>
+        <div id="instructions">
+            <h2>🌟 マーカーレスWebAR</h2>
+            <p>床や平面を検出して3Dオブジェクトを配置します</p>
         </div>
-        
-        <div id="debugInfo"></div>
-        
-        <div id="controls">
-            <button class="btn" onclick="addCube()">📦 キューブ</button>
-            <button class="btn" onclick="addSphere()">⚽ 球体</button>
-            <button class="btn" onclick="addCylinder()">🥤 円柱</button>
-            <button class="btn red" onclick="clearAll()">🗑️ クリア</button>
-        </div>
+        <button id="startButton">ARを開始</button>
     </div>
     
-    <!-- A-Frame Scene -->
-    <a-scene
+    <div id="status">
+        WebXRをサポートしているか確認中...
+    </div>
+    
+    <button id="placeButton">🎯 オブジェクトを配置</button>
+    
+    <a-scene 
         id="scene"
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-        vr-mode-ui="enabled: false"
-        embedded
-        renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;"
-        background="transparent">
+        embedded 
+        style="height: 100vh; width: 100vw;"
+        webxr="requiredFeatures: hit-test,local-floor;
+               optionalFeatures: dom-overlay,unbounded;
+               overlayElement: #ui;"
+        renderer="colorManagement: true; physicallyCorrectLights: true;"
+        background="color: transparent;">
         
-        <!-- Assets -->
+        <!-- アセット定義 -->
         <a-assets>
-            <!-- Preload materials -->
-            <a-mixin id="cube-mixin" 
-                geometry="primitive: box; width: 0.4; height: 0.4; depth: 0.4"
-                material="color: #FF6B6B; metalness: 0.2; roughness: 0.8"
-                shadow="cast: true; receive: true">
+            <a-mixin id="cube" 
+                     geometry="primitive: box; width: 0.1; height: 0.1; depth: 0.1"
+                     material="color: #FF6B6B; roughness: 0.3; metalness: 0.1"
+                     animation="property: rotation; to: 0 360 0; loop: true; dur: 3000">
             </a-mixin>
-            <a-mixin id="sphere-mixin"
-                geometry="primitive: sphere; radius: 0.2"
-                material="color: #4ECDC4; metalness: 0.1; roughness: 0.9"
-                shadow="cast: true; receive: true">
+            
+            <a-mixin id="sphere" 
+                     geometry="primitive: sphere; radius: 0.05"
+                     material="color: #4ECDC4; roughness: 0.2; metalness: 0.3"
+                     animation="property: position; to: 0 0.2 0; dir: alternate; loop: true; dur: 2000">
             </a-mixin>
-            <a-mixin id="cylinder-mixin"
-                geometry="primitive: cylinder; radius: 0.15; height: 0.6"
-                material="color: #96CEB4; metalness: 0.3; roughness: 0.7"
-                shadow="cast: true; receive: true">
+            
+            <a-mixin id="pyramid" 
+                     geometry="primitive: cone; radiusBottom: 0.05; radiusTop: 0; height: 0.1"
+                     material="color: #FFE66D; roughness: 0.4; metalness: 0.2"
+                     animation="property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1500">
             </a-mixin>
         </a-assets>
         
-        <!-- Lighting -->
-        <a-light type="ambient" color="#404040" intensity="0.5"></a-light>
-        <a-light type="directional" position="1 4 3" color="#ffffff" intensity="0.8" shadow="cast: true"></a-light>
-        <a-light type="point" position="0 2 0" color="#ffffff" intensity="0.3"></a-light>
+        <!-- 照明 -->
+        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
+        <a-light type="directional" 
+                 position="1 1 1" 
+                 color="#ffffff" 
+                 intensity="0.8"
+                 shadow="cast: true; type: pcf">
+        </a-light>
         
-        <!-- Camera -->
-        <a-entity camera></a-entity>
+        <!-- カメラ -->
+        <a-camera 
+            id="camera"
+            position="0 1.6 0"
+            look-controls="enabled: false"
+            wasd-controls="enabled: false"
+            cursor="rayOrigin: mouse">
+        </a-camera>
         
-        <!-- Ground plane (invisible but receives shadows) -->
-        <a-plane position="0 -1 0" rotation="-90 0 0" width="20" height="20" 
-                 material="color: white; transparent: true; opacity: 0.1" 
-                 shadow="receive: true"></a-plane>
-        
-        <!-- Default objects for testing -->
-        <a-box id="testCube" 
-               position="0 0.5 -1.5" 
-               color="#FF6B6B" 
-               shadow="cast: true"
-               animation="property: rotation; to: 0 360 0; loop: true; dur: 5000">
-        </a-box>
-        
-        <a-sphere id="testSphere" 
-                  position="0.8 0.7 -2" 
-                  radius="0.2" 
-                  color="#4ECDC4" 
-                  shadow="cast: true"
-                  animation="property: position; to: 0.8 1.2 -2; direction: alternate; loop: true; dur: 2000">
-        </a-sphere>
-        
-        <a-cylinder id="testCylinder" 
-                    position="-0.8 0.5 -2" 
-                    radius="0.15" 
-                    height="0.6" 
-                    color="#96CEB4" 
-                    shadow="cast: true"
-                    animation="property: rotation; to: 0 0 360; loop: true; dur: 3000">
-        </a-cylinder>
+        <!-- 床面のプレーン（目安用） -->
+        <a-plane 
+            id="floor" 
+            position="0 0 0" 
+            rotation="-90 0 0" 
+            width="4" 
+            height="4" 
+            material="color: #333; transparent: true; opacity: 0.1"
+            visible="false">
+        </a-plane>
     </a-scene>
 
     <script>
-        let scene;
+        let scene, camera;
+        let isARActive = false;
         let objectCount = 0;
-        let debugMode = false;
-        let debugLog = [];
+        let hitTestSource = null;
+        let hitTestSourceRequested = false;
         
-        // Logging function
-        function log(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = `[${timestamp}] ${message}`;
-            console.log(logEntry);
-            debugLog.push(logEntry);
-            
-            // Keep only last 20 log entries
-            if (debugLog.length > 20) {
-                debugLog.shift();
+        // UI要素の取得
+        const startButton = document.getElementById('startButton');
+        const placeButton = document.getElementById('placeButton');
+        const statusDiv = document.getElementById('status');
+        const ui = document.getElementById('ui');
+        
+        // A-Frameシーンの取得
+        scene = document.getElementById('scene');
+        
+        // WebXRサポートチェック
+        async function checkWebXRSupport() {
+            if (!navigator.xr) {
+                statusDiv.textContent = '❌ このブラウザはWebXRをサポートしていません';
+                startButton.disabled = true;
+                return false;
             }
             
-            updateDebugDisplay();
-        }
-        
-        // Update debug display
-        function updateDebugDisplay() {
-            if (debugMode) {
-                const debugDiv = document.getElementById('debugInfo');
-                debugDiv.innerHTML = debugLog.join('<br>');
-                debugDiv.scrollTop = debugDiv.scrollHeight;
-            }
-        }
-        
-        // Toggle debug panel
-        function toggleDebug() {
-            debugMode = !debugMode;
-            const debugDiv = document.getElementById('debugInfo');
-            debugDiv.style.display = debugMode ? 'block' : 'none';
-            
-            if (debugMode) {
-                log('Debug mode enabled');
-                checkSceneStatus();
-            }
-        }
-        
-        // Check scene status
-        function checkSceneStatus() {
-            if (scene) {
-                const entities = scene.querySelectorAll('a-entity, a-box, a-sphere, a-cylinder');
-                log(`Scene loaded. Total entities: ${entities.length}`);
-                
-                // Check camera
-                const camera = scene.querySelector('[camera]');
-                if (camera) {
-                    log('Camera found');
+            try {
+                const supported = await navigator.xr.isSessionSupported('immersive-ar');
+                if (supported) {
+                    statusDiv.textContent = '✅ WebXR AR対応デバイスです！';
+                    return true;
                 } else {
-                    log('WARNING: No camera found');
+                    statusDiv.textContent = '❌ AR機能がサポートされていません';
+                    startButton.disabled = true;
+                    return false;
+                }
+            } catch (error) {
+                console.error('WebXRサポートチェックエラー:', error);
+                statusDiv.textContent = '❌ WebXRチェック中にエラーが発生しました';
+                startButton.disabled = true;
+                return false;
+            }
+        }
+        
+        // ARセッション開始
+        async function startAR() {
+            try {
+                statusDiv.textContent = '🔄 ARセッションを開始しています...';
+                startButton.disabled = true;
+                
+                // A-FrameのWebXRシステムを使用してARを開始
+                const sceneEl = document.querySelector('a-scene');
+                if (sceneEl.xrSession) {
+                    statusDiv.textContent = '⚠️ ARセッションは既に開始されています';
+                    return;
                 }
                 
-                // Check AR.js status
-                if (scene.systems && scene.systems.arjs) {
-                    log('AR.js system detected');
-                } else {
-                    log('WARNING: AR.js system not detected');
-                }
-            } else {
-                log('ERROR: Scene not initialized');
+                // WebXRセッションの開始を試行
+                await sceneEl.enterVR();
+                
+                isARActive = true;
+                statusDiv.textContent = '📱 カメラを床や平面に向けてください';
+                placeButton.style.display = 'block';
+                ui.style.display = 'none';
+                
+            } catch (error) {
+                console.error('ARセッション開始エラー:', error);
+                statusDiv.textContent = '❌ ARセッションの開始に失敗しました';
+                startButton.disabled = false;
+                
+                // フォールバック: 通常のカメラビューで動作
+                startCameraFallback();
             }
         }
         
-        // Add cube
-        function addCube() {
-            if (!scene) {
-                log('ERROR: Scene not ready');
-                return;
-            }
+        // カメラフォールバック（WebXRが使用できない場合）
+        function startCameraFallback() {
+            statusDiv.textContent = '📷 カメラモードで動作中（画面をタップしてオブジェクトを配置）';
+            placeButton.style.display = 'block';
+            ui.style.display = 'none';
+            isARActive = true;
             
-            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            const cube = document.createElement('a-box');
-            const x = (Math.random() - 0.5) * 3;
-            const y = Math.random() * 0.5 + 0.2;
-            const z = -1 - Math.random() * 2;
-            
-            cube.setAttribute('position', `${x} ${y} ${z}`);
-            cube.setAttribute('color', randomColor);
-            cube.setAttribute('shadow', 'cast: true');
-            cube.setAttribute('width', '0.4');
-            cube.setAttribute('height', '0.4');
-            cube.setAttribute('depth', '0.4');
-            cube.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 4000');
-            cube.setAttribute('id', `cube-${objectCount++}`);
-            
-            scene.appendChild(cube);
-            log(`Added cube at position: ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
+            // 床面を表示
+            const floor = document.getElementById('floor');
+            floor.setAttribute('visible', true);
         }
         
-        // Add sphere
-        function addSphere() {
-            if (!scene) {
-                log('ERROR: Scene not ready');
-                return;
-            }
+        // オブジェクトの配置
+        function placeObject() {
+            if (!isARActive) return;
             
-            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            objectCount++;
+            const objectTypes = ['cube', 'sphere', 'pyramid'];
+            const randomType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
             
-            const sphere = document.createElement('a-sphere');
-            const x = (Math.random() - 0.5) * 3;
-            const y = Math.random() * 0.5 + 0.2;
-            const z = -1 - Math.random() * 2;
+            // ランダムな位置に配置
+            const x = (Math.random() - 0.5) * 2;
+            const z = (Math.random() - 0.5) * 2;
+            const y = 0.05;
             
-            sphere.setAttribute('position', `${x} ${y} ${z}`);
-            sphere.setAttribute('color', randomColor);
-            sphere.setAttribute('shadow', 'cast: true');
-            sphere.setAttribute('radius', '0.2');
-            sphere.setAttribute('animation', 'property: position; to: ' + x + ' ' + (y + 0.5) + ' ' + z + '; direction: alternate; loop: true; dur: 2500');
-            sphere.setAttribute('id', `sphere-${objectCount++}`);
+            // 新しいオブジェクトを作成
+            const entity = document.createElement('a-entity');
+            entity.setAttribute('mixin', randomType);
+            entity.setAttribute('position', `${x} ${y} ${z}`);
+            entity.setAttribute('id', `object-${objectCount}`);
             
-            scene.appendChild(sphere);
-            log(`Added sphere at position: ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
-        }
-        
-        // Add cylinder
-        function addCylinder() {
-            if (!scene) {
-                log('ERROR: Scene not ready');
-                return;
-            }
-            
-            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            const cylinder = document.createElement('a-cylinder');
-            const x = (Math.random() - 0.5) * 3;
-            const y = Math.random() * 0.3 + 0.3;
-            const z = -1 - Math.random() * 2;
-            
-            cylinder.setAttribute('position', `${x} ${y} ${z}`);
-            cylinder.setAttribute('color', randomColor);
-            cylinder.setAttribute('shadow', 'cast: true');
-            cylinder.setAttribute('radius', '0.15');
-            cylinder.setAttribute('height', '0.6');
-            cylinder.setAttribute('animation', 'property: rotation; to: 0 0 360; loop: true; dur: 3500');
-            cylinder.setAttribute('id', `cylinder-${objectCount++}`);
-            
-            scene.appendChild(cylinder);
-            log(`Added cylinder at position: ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
-        }
-        
-        // Clear all objects
-        function clearAll() {
-            if (!scene) {
-                log('ERROR: Scene not ready');
-                return;
-            }
-            
-            const userObjects = scene.querySelectorAll('[id^="cube-"], [id^="sphere-"], [id^="cylinder-"]');
-            userObjects.forEach((obj, index) => {
-                obj.remove();
+            // クリックで削除する機能を追加
+            entity.addEventListener('click', function() {
+                this.remove();
             });
             
-            log(`Cleared ${userObjects.length} user objects`);
-            objectCount = 0;
-        }
-        
-        // Update status
-        function updateStatus(message) {
-            const statusEl = document.getElementById('status');
-            if (statusEl) {
-                statusEl.textContent = message;
-            }
-            log(message);
-        }
-        
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            log('DOM loaded');
-            updateStatus('初期化中...');
+            scene.appendChild(entity);
             
-            // Wait for A-Frame to load
-            if (typeof AFRAME !== 'undefined') {
-                initializeAR();
-            } else {
-                log('Waiting for A-Frame...');
-                setTimeout(initializeAR, 1000);
-            }
-        });
-        
-        // Initialize AR
-        function initializeAR() {
-            scene = document.querySelector('a-scene');
+            // フィードバック
+            statusDiv.textContent = `🎉 オブジェクト${objectCount}を配置しました！（タップで削除）`;
             
-            if (!scene) {
-                log('ERROR: Scene element not found');
-                updateStatus('エラー: シーンが見つかりません');
-                return;
-            }
-            
-            log('Scene element found');
-            
-            // Wait for scene to be ready
-            if (scene.hasLoaded) {
-                onSceneReady();
-            } else {
-                scene.addEventListener('loaded', onSceneReady);
-            }
-            
-            // Add error handling
-            scene.addEventListener('renderstart', () => {
-                log('Render started');
-            });
-            
-            // Check for AR.js
+            // 3秒後にステータスを元に戻す
             setTimeout(() => {
-                if (window.ARjs) {
-                    log('AR.js library loaded');
-                    updateStatus('カメラ準備中...');
-                } else {
-                    log('WARNING: AR.js not detected');
-                    updateStatus('AR.js読み込みエラー');
+                if (isARActive) {
+                    statusDiv.textContent = '👆 画面をタップしてオブジェクトを配置';
                 }
-            }, 2000);
+            }, 3000);
         }
         
-        // Scene ready callback
-        function onSceneReady() {
-            log('Scene ready');
-            updateStatus('AR準備完了 - オブジェクトを追加してください');
-            
-            // Add some test visibility
-            setTimeout(() => {
-                const testObjects = scene.querySelectorAll('#testCube, #testSphere, #testCylinder');
-                log(`Test objects visible: ${testObjects.length}`);
-                
-                if (testObjects.length === 0) {
-                    log('WARNING: Test objects not found');
-                }
-            }, 1000);
-        }
+        // イベントリスナー
+        startButton.addEventListener('click', startAR);
+        placeButton.addEventListener('click', placeObject);
         
-        // Handle errors
-        window.addEventListener('error', (event) => {
-            log(`JavaScript Error: ${event.error?.message || event.message}`);
+        // 画面タップでもオブジェクトを配置
+        document.addEventListener('click', function(event) {
+            if (isARActive && !event.target.closest('button')) {
+                placeObject();
+            }
         });
         
-        // Handle unhandled promise rejections
-        window.addEventListener('unhandledrejection', (event) => {
-            log(`Promise Rejection: ${event.reason}`);
+        // ページ読み込み時の初期化
+        window.addEventListener('load', async function() {
+            await checkWebXRSupport();
         });
         
-        log('Script loaded');
+        // A-Frameシーンの準備完了時
+        scene.addEventListener('loaded', function() {
+            console.log('A-Frameシーンが読み込まれました');
+        });
+        
+        // エラーハンドリング
+        window.addEventListener('error', function(e) {
+            console.error('エラーが発生しました:', e.error);
+            statusDiv.textContent = '❌ アプリケーションエラーが発生しました';
+        });
     </script>
 </body>
 </html>
