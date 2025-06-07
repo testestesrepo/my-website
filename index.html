@@ -1,11 +1,328 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="utf-8">
+    <title>Simple WebAR App</title>
+    <meta name="description" content="Simple WebAR App with A-Frame">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- A-Frame -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
+    <!-- AR.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/AR.js/3.4.5/aframe-ar.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        #arContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 100;
+            text-align: center;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #errorMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 200;
+        }
+    </style>
 </head>
 <body>
-    こんにちは
+    <div id="arContainer">
+        <div id="instructions">
+            <h3>🚀 Simple WebAR App</h3>
+            <p>カメラを許可してARを開始してください</p>
+            <p>画面をタップして3Dオブジェクトを配置できます</p>
+        </div>
+        
+        <div id="controls">
+            <button id="startAR">AR開始</button>
+            <button id="addCube" class="hidden">キューブ追加</button>
+            <button id="addSphere" class="hidden">球体追加</button>
+            <button id="clearObjects" class="hidden">クリア</button>
+        </div>
+        
+        <div id="errorMessage" class="hidden">
+            <h3>エラーが発生しました</h3>
+            <p id="errorText"></p>
+            <button onclick="location.reload()">再読み込み</button>
+        </div>
+        
+        <!-- A-Frame Scene -->
+        <a-scene
+            id="arScene"
+            class="hidden"
+            embedded
+            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+            vr-mode-ui="enabled: false"
+            renderer="logarithmicDepthBuffer: true;"
+            device-orientation-permission-ui="enabled: false">
+            
+            <!-- Assets -->
+            <a-assets>
+                <a-mixin id="cube-mixin" 
+                    geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.3"
+                    material="color: #FF6B6B"
+                    animation="property: rotation; to: 0 360 0; loop: true; dur: 4000">
+                </a-mixin>
+                
+                <a-mixin id="sphere-mixin"
+                    geometry="primitive: sphere; radius: 0.15"
+                    material="color: #4ECDC4"
+                    animation="property: position; to: 0 0.5 0; direction: alternate; loop: true; dur: 2000">
+                </a-mixin>
+            </a-assets>
+            
+            <!-- Lighting -->
+            <a-light type="ambient" color="#404040"></a-light>
+            <a-light type="directional" position="0 1 0" color="#ffffff"></a-light>
+            
+            <!-- Camera -->
+            <a-camera-static></a-camera-static>
+            
+            <!-- Invisible marker for object placement -->
+            <a-marker id="defaultMarker" type="pattern" preset="hiro" visible="false">
+                <!-- Objects will be added here dynamically -->
+            </a-marker>
+        </a-scene>
+    </div>
+
+    <script>
+        let scene;
+        let marker;
+        let objectCount = 0;
+        let isARStarted = false;
+        
+        // DOM elements
+        const startButton = document.getElementById('startAR');
+        const addCubeButton = document.getElementById('addCube');
+        const addSphereButton = document.getElementById('addSphere');
+        const clearButton = document.getElementById('clearObjects');
+        const instructions = document.getElementById('instructions');
+        const arScene = document.getElementById('arScene');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        
+        // Initialize AR
+        async function initAR() {
+            try {
+                // Request camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                
+                // Stop the stream as AR.js will handle it
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Show AR scene
+                arScene.classList.remove('hidden');
+                scene = document.querySelector('a-scene');
+                marker = document.querySelector('#defaultMarker');
+                
+                // Wait for scene to load
+                scene.addEventListener('loaded', () => {
+                    console.log('AR Scene loaded');
+                    isARStarted = true;
+                    updateUI();
+                });
+                
+                // Handle touch events for object placement
+                document.addEventListener('touchstart', handleTouch);
+                document.addEventListener('click', handleClick);
+                
+                updateUI();
+                
+            } catch (error) {
+                console.error('AR initialization failed:', error);
+                showError('カメラにアクセスできません。ブラウザでカメラの許可を与えてください。');
+            }
+        }
+        
+        // Handle touch events
+        function handleTouch(event) {
+            if (!isARStarted) return;
+            
+            event.preventDefault();
+            const touch = event.touches[0];
+            placeObjectAtScreenPosition(touch.clientX, touch.clientY);
+        }
+        
+        // Handle click events
+        function handleClick(event) {
+            if (!isARStarted) return;
+            if (event.target.tagName === 'BUTTON') return;
+            
+            placeObjectAtScreenPosition(event.clientX, event.clientY);
+        }
+        
+        // Place object at screen position
+        function placeObjectAtScreenPosition(x, y) {
+            // Convert screen coordinates to world position
+            const randomX = (Math.random() - 0.5) * 2;
+            const randomY = Math.random() * 0.5;
+            const randomZ = -1 - Math.random() * 2;
+            
+            addCube(randomX, randomY, randomZ);
+        }
+        
+        // Add cube to scene
+        function addCube(x = 0, y = 0, z = -1) {
+            if (!scene) return;
+            
+            const cube = document.createElement('a-entity');
+            cube.setAttribute('mixin', 'cube-mixin');
+            cube.setAttribute('position', `${x} ${y} ${z}`);
+            cube.setAttribute('id', `cube-${objectCount++}`);
+            
+            // Add random color
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            cube.setAttribute('material', `color: ${randomColor}`);
+            
+            scene.appendChild(cube);
+        }
+        
+        // Add sphere to scene
+        function addSphere(x = 0, y = 0.2, z = -1) {
+            if (!scene) return;
+            
+            const sphere = document.createElement('a-entity');
+            sphere.setAttribute('mixin', 'sphere-mixin');
+            sphere.setAttribute('position', `${x} ${y} ${z}`);
+            sphere.setAttribute('id', `sphere-${objectCount++}`);
+            
+            // Add random color
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            sphere.setAttribute('material', `color: ${randomColor}`);
+            
+            scene.appendChild(sphere);
+        }
+        
+        // Clear all objects
+        function clearObjects() {
+            if (!scene) return;
+            
+            const objects = scene.querySelectorAll('[id^="cube-"], [id^="sphere-"]');
+            objects.forEach(obj => obj.remove());
+            objectCount = 0;
+        }
+        
+        // Update UI based on AR state
+        function updateUI() {
+            if (isARStarted) {
+                startButton.classList.add('hidden');
+                addCubeButton.classList.remove('hidden');
+                addSphereButton.classList.remove('hidden');
+                clearButton.classList.remove('hidden');
+                instructions.innerHTML = `
+                    <h3>🎉 AR起動中</h3>
+                    <p>画面をタップして3Dオブジェクトを配置</p>
+                    <p>下のボタンでオブジェクトを追加</p>
+                `;
+            }
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+        
+        // Event listeners
+        startButton.addEventListener('click', initAR);
+        
+        addCubeButton.addEventListener('click', () => {
+            const x = (Math.random() - 0.5) * 2;
+            const z = -1 - Math.random() * 2;
+            addCube(x, 0, z);
+        });
+        
+        addSphereButton.addEventListener('click', () => {
+            const x = (Math.random() - 0.5) * 2;
+            const z = -1 - Math.random() * 2;
+            addSphere(x, 0.2, z);
+        });
+        
+        clearButton.addEventListener('click', clearObjects);
+        
+        // Check if device supports WebAR
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError('このデバイスはWebARをサポートしていません。');
+        }
+        
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (scene && scene.resize) {
+                    scene.resize();
+                }
+            }, 500);
+        });
+        
+        console.log('WebAR App initialized');
+    </script>
 </body>
 </html>
