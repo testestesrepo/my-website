@@ -84,6 +84,11 @@
             background: #fff;
             border-radius: 10px;
         }
+        
+        #ar-container a-scene {
+            border: 2px solid #333;
+            border-radius: 10px;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ar.js/2.2.2/aframe-ar.min.js"></script>
@@ -118,17 +123,28 @@
             <h3>🔥 AR テスト</h3>
             <p>カメラが正常に動作したらARテストを開始できます</p>
             <button onclick="startARTest()" id="ar-btn">🚀 ARテスト開始</button>
+            <button onclick="stopARTest()" id="ar-stop-btn" class="hidden">⏹️ AR停止</button>
             
             <div id="ar-container" class="hidden">
                 <a-scene
                     id="ar-scene"
                     embedded
-                    arjs="sourceType: webcam; debugUIEnabled: false;"
-                    style="height: 400px; width: 100%;">
+                    arjs="sourceType: webcam; debugUIEnabled: false; cameraParametersUrl: data/camera_para.dat;"
+                    style="height: 400px; width: 100%;"
+                    vr-mode-ui="enabled: false;">
                     
                     <a-marker preset="hiro">
-                        <a-box position="0 0.5 0" material="color: red;" animation="property: rotation; to: 0 360 0; loop: true; dur: 2000;"></a-box>
-                        <a-text value="Hello AR!" position="0 1 0" align="center"></a-text>
+                        <a-box 
+                            position="0 0.5 0" 
+                            material="color: red;" 
+                            animation="property: rotation; to: 0 360 0; loop: true; dur: 2000;">
+                        </a-box>
+                        <a-text 
+                            value="Hello AR!" 
+                            position="0 1.5 0" 
+                            align="center"
+                            color="white">
+                        </a-text>
                     </a-marker>
                     
                     <a-entity camera></a-entity>
@@ -137,6 +153,11 @@
                 <p style="margin-top: 10px;">
                     📋 <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">HIROマーカー画像</a>をカメラに向けてください
                 </p>
+                
+                <div class="info" style="margin-top: 10px;">
+                    <p><strong>AR デバッグ情報:</strong></p>
+                    <p id="ar-debug">AR初期化待機中...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -145,6 +166,8 @@
         let currentStream = null;
         let video = document.getElementById('video');
         let statusDiv = document.getElementById('status');
+        let arScene = null;
+        let arActive = false;
         
         // 初期化チェック
         function initCheck() {
@@ -163,6 +186,15 @@
             statusDiv.innerHTML = `<strong>ステータス:</strong> ${message}`;
             statusDiv.className = `status ${type}`;
             console.log('Status:', message);
+        }
+        
+        // ARデバッグ情報更新
+        function updateARDebug(message) {
+            const debugDiv = document.getElementById('ar-debug');
+            if (debugDiv) {
+                debugDiv.textContent = message;
+            }
+            console.log('AR Debug:', message);
         }
         
         // 基本カメラテスト
@@ -279,26 +311,121 @@
         // ARテスト開始
         function startARTest() {
             updateStatus('🔥 ARを初期化中...', '');
+            updateARDebug('AR初期化を開始...');
             
-            // カメラを停止してAR.jsに移行
+            // 既存のカメラストリームを停止（重要）
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
                 currentStream = null;
                 video.srcObject = null;
             }
             
+            // ARコンテナを表示
             document.getElementById('ar-container').classList.remove('hidden');
+            document.getElementById('ar-btn').classList.add('hidden');
+            document.getElementById('ar-stop-btn').classList.remove('hidden');
             
-            const scene = document.getElementById('ar-scene');
+            // A-Frameシーンを取得
+            arScene = document.getElementById('ar-scene');
             
-            scene.addEventListener('arjs-video-loaded', function() {
+            // AR.jsのイベントリスナーを設定
+            arScene.addEventListener('arjs-video-loaded', function(e) {
                 updateStatus('✅ AR初期化完了！HIROマーカーをカメラに向けてください', 'success');
+                updateARDebug('ARカメラが正常に起動しました');
+                arActive = true;
+                console.log('AR Video loaded:', e);
             });
             
-            scene.addEventListener('camera-error', function(error) {
+            arScene.addEventListener('camera-error', function(error) {
                 updateStatus('❌ ARカメラエラー', 'error');
+                updateARDebug('ARカメラの起動に失敗しました: ' + error.message);
                 console.error('AR Camera Error:', error);
             });
+            
+            // AR.jsの詳細イベント
+            arScene.addEventListener('camera-init', function(e) {
+                updateARDebug('ARカメラを初期化中...');
+                console.log('AR Camera init:', e);
+            });
+            
+            // マーカー検出イベント
+            const marker = arScene.querySelector('a-marker');
+            if (marker) {
+                marker.addEventListener('markerFound', function() {
+                    updateARDebug('マーカーを検出しました！');
+                    console.log('Marker found');
+                });
+                
+                marker.addEventListener('markerLost', function() {
+                    updateARDebug('マーカーを見失いました');
+                    console.log('Marker lost');
+                });
+            }
+            
+            // 初期化タイムアウト
+            setTimeout(() => {
+                if (!arActive) {
+                    updateStatus('⚠️ AR初期化に時間がかかっています...', '');
+                    updateARDebug('AR初期化中... カメラの許可を確認してください');
+                    
+                    // さらに待機
+                    setTimeout(() => {
+                        if (!arActive) {
+                            updateStatus('❌ AR初期化がタイムアウトしました', 'error');
+                            updateARDebug('AR初期化がタイムアウトしました。ページを再読み込みしてください');
+                        }
+                    }, 10000);
+                }
+            }, 5000);
+        }
+        
+        // AR停止
+        function stopARTest() {
+            updateStatus('🔥 ARを停止中...', '');
+            
+            // A-Frameシーンを非表示
+            document.getElementById('ar-container').classList.add('hidden');
+            document.getElementById('ar-btn').classList.remove('hidden');
+            document.getElementById('ar-stop-btn').classList.add('hidden');
+            
+            // ARの状態をリセット
+            arActive = false;
+            
+            // シーンを再作成（完全にリセット）
+            const arContainer = document.getElementById('ar-container');
+            const oldScene = document.getElementById('ar-scene');
+            
+            // 新しいシーンを作成
+            const newScene = document.createElement('a-scene');
+            newScene.id = 'ar-scene';
+            newScene.setAttribute('embedded', '');
+            newScene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; cameraParametersUrl: data/camera_para.dat;');
+            newScene.setAttribute('style', 'height: 400px; width: 100%;');
+            newScene.setAttribute('vr-mode-ui', 'enabled: false');
+            
+            newScene.innerHTML = `
+                <a-marker preset="hiro">
+                    <a-box 
+                        position="0 0.5 0" 
+                        material="color: red;" 
+                        animation="property: rotation; to: 0 360 0; loop: true; dur: 2000;">
+                    </a-box>
+                    <a-text 
+                        value="Hello AR!" 
+                        position="0 1.5 0" 
+                        align="center"
+                        color="white">
+                    </a-text>
+                </a-marker>
+                
+                <a-entity camera></a-entity>
+            `;
+            
+            // 古いシーンを削除して新しいシーンを追加
+            oldScene.parentNode.replaceChild(newScene, oldScene);
+            
+            updateStatus('📷 ARを停止しました', '');
+            updateARDebug('ARを停止しました');
         }
         
         // 初期化
@@ -321,6 +448,12 @@
         window.addEventListener('error', function(e) {
             console.error('Global error:', e);
             updateStatus('❌ エラーが発生しました: ' + e.message, 'error');
+        });
+        
+        // AR.js用のエラーハンドリング
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e);
+            updateARDebug('Promise rejection: ' + e.reason);
         });
         
         console.log('WebAR Camera Test initialized');
