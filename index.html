@@ -1,642 +1,100 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D WebAR - ドラッグ対応</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Complete WebXR AR Demo</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-ar-hit-test@1.0.2/dist/aframe-ar-hit-test.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            background: #000;
-            overflow: hidden;
-            user-select: none;
-        }
-        
-        #video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 1;
-        }
-        
-        #threeCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 2;
-        }
-        
-        #ui {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 15px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-        
-        #controls {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .control-btn {
-            padding: 12px 20px;
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            min-width: 100px;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        }
-        
-        .control-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-        }
-        
-        .control-btn:active {
-            transform: translateY(0);
-        }
-        
-        .control-btn.secondary {
-            background: linear-gradient(45deg, #FF6B6B, #ff5252);
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-        }
-        
-        .control-btn.secondary:hover {
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-        }
-        
-        .control-btn.special {
-            background: linear-gradient(45deg, #9C27B0, #7B1FA2);
-            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
-        }
-        
-        .control-btn.special:hover {
-            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
-        }
-        
-        #status {
-            position: fixed;
-            bottom: 120px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 12px;
-            border-radius: 10px;
-            text-align: center;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            font-size: 14px;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        #instructions {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.95);
-            color: white;
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            z-index: 2000;
-            max-width: 90vw;
-            backdrop-filter: blur(15px);
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-        
-        #startBtn {
-            margin-top: 20px;
-            padding: 15px 30px;
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        }
-        
-        #startBtn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-        }
-        
-        .instruction-list {
-            text-align: left;
-            margin: 15px 0;
-            line-height: 1.8;
-        }
-        
-        .instruction-list li {
-            margin: 8px 0;
-        }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: sans-serif;
+      }
+      #gui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 999;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+        border-radius: 8px;
+      }
+      #gui button {
+        margin: 5px;
+        padding: 8px 12px;
+        font-size: 14px;
+      }
     </style>
-</head>
-<body>
-    <div id="instructions">
-        <h2>🎮 3D WebAR</h2>
-        <p>リアルな3Dオブジェクトを配置・操作できます</p>
-        <ul class="instruction-list">
-            <li>🎯 画面タップで3Dオブジェクト配置</li>
-            <li>👆 ドラッグでオブジェクト移動</li>
-            <li>🔄 ピンチで回転・スケール調整</li>
-            <li>🗑️ ダブルタップで削除</li>
-            <li>✨ リアルな3D描画とライティング</li>
-        </ul>
-        <button id="startBtn">3D ARを開始</button>
-    </div>
-    
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="threeCanvas"></canvas>
-    
-    <div id="ui" class="hidden">
-        <h3>🌟 3D WebAR Studio</h3>
-        <p>オブジェクト数: <span id="objectCount">0</span> | 選択中: <span id="selectedObject">なし</span></p>
-    </div>
-    
-    <div id="controls" class="hidden">
-        <button class="control-btn" id="cubeBtn">📦 立方体</button>
-        <button class="control-btn" id="sphereBtn">⚽ 球体</button>
-        <button class="control-btn special" id="torusBtn">🍩 トーラス</button>
-        <button class="control-btn secondary" id="clearBtn">🗑️ 全削除</button>
-    </div>
-    
-    <div id="status" class="hidden">
-        画面をタップして3Dオブジェクトを配置してください
+  </head>
+  <body>
+    <!-- GUI -->
+    <div id="gui">
+      <button id="cubeButton">Cube</button>
+      <button id="sphereButton">Sphere</button>
     </div>
 
+    <!-- A-Frame Scene -->
+    <a-scene
+      xr="mode: ar;"
+      renderer="colorManagement: true; physicallyCorrectLights: true;"
+      embedded
+    >
+      <!-- 環境光 -->
+      <a-entity light="type: ambient; intensity: 1"></a-entity>
+
+      <!-- ヒットテスト用ターゲット -->
+      <a-entity id="hitTestEntity" ar-hit-test="target: #placementMarker; target-visible: false;"></a-entity>
+
+      <!-- ヒットターゲット位置表示用のマーカー（非表示にして使う） -->
+      <a-sphere
+        id="placementMarker"
+        visible="false"
+        radius="0.01"
+        color="#FFFFFF"
+      ></a-sphere>
+
+      <!-- カメラ -->
+      <a-camera></a-camera>
+    </a-scene>
+
+    <!-- JS -->
     <script>
-        let scene, camera, renderer, video;
-        let objects = [];
-        let selectedObject = null;
-        let isDragging = false;
-        let dragStart = { x: 0, y: 0 };
-        let objectIdCounter = 0;
-        let mouse = { x: 0, y: 0 };
-        let raycaster, mouseVector;
-        
-        // オブジェクトタイプ定義
-        const objectTypes = {
-            cube: {
-                geometry: () => new THREE.BoxGeometry(0.5, 0.5, 0.5),
-                material: () => new THREE.MeshPhongMaterial({ 
-                    color: 0xff6b6b,
-                    shininess: 100,
-                    transparent: true,
-                    opacity: 0.9 
-                })
-            },
-            sphere: {
-                geometry: () => new THREE.SphereGeometry(0.3, 32, 32),
-                material: () => new THREE.MeshPhongMaterial({ 
-                    color: 0x4ecdc4,
-                    shininess: 100,
-                    transparent: true,
-                    opacity: 0.9 
-                })
-            },
-            torus: {
-                geometry: () => new THREE.TorusGeometry(0.3, 0.1, 16, 100),
-                material: () => new THREE.MeshPhongMaterial({ 
-                    color: 0x9c27b0,
-                    shininess: 100,
-                    transparent: true,
-                    opacity: 0.9 
-                })
-            }
-        };
-        
-        // DOM要素
-        const instructionsDiv = document.getElementById('instructions');
-        const startBtn = document.getElementById('startBtn');
-        const ui = document.getElementById('ui');
-        const controls = document.getElementById('controls');
-        const status = document.getElementById('status');
-        const objectCountSpan = document.getElementById('objectCount');
-        const selectedObjectSpan = document.getElementById('selectedObject');
-        
-        // 初期化
-        function init() {
-            video = document.getElementById('video');
-            
-            // Three.jsセットアップ
-            setupThreeJS();
-            
-            // イベントリスナー
-            startBtn.addEventListener('click', startAR);
-            document.getElementById('cubeBtn').addEventListener('click', () => addObject('cube'));
-            document.getElementById('sphereBtn').addEventListener('click', () => addObject('sphere'));
-            document.getElementById('torusBtn').addEventListener('click', () => addObject('torus'));
-            document.getElementById('clearBtn').addEventListener('click', clearAllObjects);
-            
-            // マウス・タッチイベント
-            renderer.domElement.addEventListener('mousedown', onMouseDown);
-            renderer.domElement.addEventListener('mousemove', onMouseMove);
-            renderer.domElement.addEventListener('mouseup', onMouseUp);
-            renderer.domElement.addEventListener('click', onClick);
-            renderer.domElement.addEventListener('dblclick', onDoubleClick);
-            
-            // タッチイベント
-            renderer.domElement.addEventListener('touchstart', onTouchStart);
-            renderer.domElement.addEventListener('touchmove', onTouchMove);
-            renderer.domElement.addEventListener('touchend', onTouchEnd);
-            
-            window.addEventListener('resize', onWindowResize);
+      let currentShape = 'box'; // 初期はbox
+      const scene = document.querySelector('a-scene');
+      const marker = document.querySelector('#placementMarker');
+
+      // GUIボタン設定
+      document.getElementById('cubeButton').addEventListener('click', () => {
+        currentShape = 'box';
+      });
+
+      document.getElementById('sphereButton').addEventListener('click', () => {
+        currentShape = 'sphere';
+      });
+
+      // タップ時の配置
+      scene.addEventListener('click', () => {
+        const position = marker.getAttribute('position');
+        let newEntity;
+
+        if (currentShape === 'box') {
+          newEntity = document.createElement('a-box');
+          newEntity.setAttribute('depth', '0.5');
+          newEntity.setAttribute('height', '0.5');
+          newEntity.setAttribute('width', '0.5');
+        } else if (currentShape === 'sphere') {
+          newEntity = document.createElement('a-sphere');
+          newEntity.setAttribute('radius', '0.25');
         }
-        
-        // Three.js セットアップ
-        function setupThreeJS() {
-            // シーン作成
-            scene = new THREE.Scene();
-            
-            // カメラ作成
-            camera = new THREE.PerspectiveCamera(
-                75,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                1000
-            );
-            camera.position.z = 5;
-            
-            // レンダラー作成
-            renderer = new THREE.WebGLRenderer({ 
-                canvas: document.getElementById('threeCanvas'),
-                alpha: true,
-                antialias: true 
-            });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            
-            // ライティング
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-            scene.add(ambientLight);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(1, 1, 1);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
-            
-            const pointLight = new THREE.PointLight(0xffffff, 0.5, 100);
-            pointLight.position.set(0, 0, 3);
-            scene.add(pointLight);
-            
-            // レイキャスター
-            raycaster = new THREE.Raycaster();
-            mouseVector = new THREE.Vector2();
-        }
-        
-        // ARセッション開始
-        async function startAR() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                });
-                
-                video.srcObject = stream;
-                video.play();
-                
-                // UI切り替え
-                instructionsDiv.classList.add('hidden');
-                ui.classList.remove('hidden');
-                controls.classList.remove('hidden');
-                status.classList.remove('hidden');
-                
-                // アニメーションループ開始
-                animate();
-                
-                status.textContent = '✅ 3D ARが開始されました！タップして3Dオブジェクトを配置';
-                
-            } catch (error) {
-                console.error('カメラアクセスエラー:', error);
-                alert('カメラにアクセスできませんでした。');
-            }
-        }
-        
-        // アニメーションループ
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // オブジェクトアニメーション
-            objects.forEach(obj => {
-                if (obj !== selectedObject) {
-                    obj.rotation.x += 0.01;
-                    obj.rotation.y += 0.01;
-                }
-                
-                // 浮遊効果
-                obj.position.y += Math.sin(Date.now() * 0.002 + obj.userData.offset) * 0.002;
-            });
-            
-            renderer.render(scene, camera);
-        }
-        
-        // オブジェクト追加
-        function addObject(type, position = null) {
-            const objType = objectTypes[type];
-            const geometry = objType.geometry();
-            const material = objType.material();
-            
-            const mesh = new THREE.Mesh(geometry, material);
-            
-            // 位置設定
-            if (position) {
-                mesh.position.copy(position);
-            } else {
-                mesh.position.set(
-                    (Math.random() - 0.5) * 4,
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 2
-                );
-            }
-            
-            // ユーザーデータ
-            mesh.userData = {
-                id: ++objectIdCounter,
-                type: type,
-                originalColor: material.color.clone(),
-                offset: Math.random() * Math.PI * 2
-            };
-            
-            // 影の設定
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            
-            scene.add(mesh);
-            objects.push(mesh);
-            
-            updateUI();
-            
-            status.textContent = `✨ ${type}を配置しました！ドラッグで移動できます`;
-            setTimeout(() => {
-                status.textContent = 'オブジェクトをドラッグして移動、ダブルタップで削除';
-            }, 2000);
-        }
-        
-        // マウス座標を正規化
-        function getMousePosition(event) {
-            const rect = renderer.domElement.getBoundingClientRect();
-            return {
-                x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
-                y: -((event.clientY - rect.top) / rect.height) * 2 + 1
-            };
-        }
-        
-        // タッチ座標を正規化
-        function getTouchPosition(event) {
-            const rect = renderer.domElement.getBoundingClientRect();
-            const touch = event.touches[0];
-            return {
-                x: ((touch.clientX - rect.left) / rect.width) * 2 - 1,
-                y: -((touch.clientY - rect.top) / rect.height) * 2 + 1
-            };
-        }
-        
-        // オブジェクト検索
-        function getIntersectedObject(mousePos) {
-            mouseVector.set(mousePos.x, mousePos.y);
-            raycaster.setFromCamera(mouseVector, camera);
-            
-            const intersects = raycaster.intersectObjects(objects);
-            return intersects.length > 0 ? intersects[0].object : null;
-        }
-        
-        // マウスダウン
-        function onMouseDown(event) {
-            const mousePos = getMousePosition(event);
-            const intersectedObject = getIntersectedObject(mousePos);
-            
-            if (intersectedObject) {
-                selectedObject = intersectedObject;
-                isDragging = true;
-                dragStart.x = mousePos.x;
-                dragStart.y = mousePos.y;
-                
-                // 選択表示
-                highlightObject(selectedObject, true);
-                updateUI();
-            }
-        }
-        
-        // マウス移動
-        function onMouseMove(event) {
-            if (isDragging && selectedObject) {
-                const mousePos = getMousePosition(event);
-                
-                // オブジェクト移動
-                const deltaX = (mousePos.x - dragStart.x) * 3;
-                const deltaY = (mousePos.y - dragStart.y) * 3;
-                
-                selectedObject.position.x += deltaX;
-                selectedObject.position.y += deltaY;
-                
-                dragStart.x = mousePos.x;
-                dragStart.y = mousePos.y;
-            }
-        }
-        
-        // マウスアップ
-        function onMouseUp(event) {
-            if (selectedObject) {
-                highlightObject(selectedObject, false);
-            }
-            selectedObject = null;
-            isDragging = false;
-            updateUI();
-        }
-        
-        // クリック
-        function onClick(event) {
-            if (!isDragging) {
-                const mousePos = getMousePosition(event);
-                const intersectedObject = getIntersectedObject(mousePos);
-                
-                if (!intersectedObject) {
-                    // 空いている場所をクリック - ランダムオブジェクト配置
-                    const types = Object.keys(objectTypes);
-                    const randomType = types[Math.floor(Math.random() * types.length)];
-                    
-                    // クリック位置に配置
-                    const worldPos = new THREE.Vector3();
-                    worldPos.set(mousePos.x, mousePos.y, 0.5);
-                    worldPos.unproject(camera);
-                    
-                    const direction = worldPos.sub(camera.position).normalize();
-                    const distance = -camera.position.z / direction.z;
-                    const position = camera.position.clone().add(direction.multiplyScalar(distance));
-                    
-                    addObject(randomType, position);
-                }
-            }
-        }
-        
-        // ダブルクリック
-        function onDoubleClick(event) {
-            const mousePos = getMousePosition(event);
-            const intersectedObject = getIntersectedObject(mousePos);
-            
-            if (intersectedObject) {
-                removeObject(intersectedObject);
-            }
-        }
-        
-        // タッチイベント
-        function onTouchStart(event) {
-            event.preventDefault();
-            if (event.touches.length === 1) {
-                const mousePos = getTouchPosition(event);
-                const intersectedObject = getIntersectedObject(mousePos);
-                
-                if (intersectedObject) {
-                    selectedObject = intersectedObject;
-                    isDragging = true;
-                    dragStart.x = mousePos.x;
-                    dragStart.y = mousePos.y;
-                    highlightObject(selectedObject, true);
-                    updateUI();
-                }
-            }
-        }
-        
-        function onTouchMove(event) {
-            event.preventDefault();
-            if (isDragging && selectedObject && event.touches.length === 1) {
-                const mousePos = getTouchPosition(event);
-                
-                const deltaX = (mousePos.x - dragStart.x) * 3;
-                const deltaY = (mousePos.y - dragStart.y) * 3;
-                
-                selectedObject.position.x += deltaX;
-                selectedObject.position.y += deltaY;
-                
-                dragStart.x = mousePos.x;
-                dragStart.y = mousePos.y;
-            }
-        }
-        
-        function onTouchEnd(event) {
-            event.preventDefault();
-            if (selectedObject) {
-                highlightObject(selectedObject, false);
-            }
-            
-            // ダブルタップ検出（簡易版）
-            if (event.timeStamp - (window.lastTouchEnd || 0) < 300) {
-                const mousePos = { x: mouse.x, y: mouse.y };
-                const intersectedObject = getIntersectedObject(mousePos);
-                if (intersectedObject) {
-                    removeObject(intersectedObject);
-                }
-            }
-            window.lastTouchEnd = event.timeStamp;
-            
-            selectedObject = null;
-            isDragging = false;
-            updateUI();
-        }
-        
-        // オブジェクトハイライト
-        function highlightObject(obj, highlight) {
-            if (highlight) {
-                obj.material.emissive.setHex(0x333333);
-                obj.scale.set(1.2, 1.2, 1.2);
-            } else {
-                obj.material.emissive.setHex(0x000000);
-                obj.scale.set(1, 1, 1);
-            }
-        }
-        
-        // オブジェクト削除
-        function removeObject(obj) {
-            scene.remove(obj);
-            objects = objects.filter(o => o !== obj);
-            
-            if (obj.geometry) obj.geometry.dispose();
-            if (obj.material) obj.material.dispose();
-            
-            updateUI();
-            status.textContent = '🗑️ オブジェクトを削除しました';
-            setTimeout(() => {
-                status.textContent = 'オブジェクトをドラッグして移動、ダブルタップで削除';
-            }, 1500);
-        }
-        
-        // 全オブジェクト削除
-        function clearAllObjects() {
-            objects.forEach(obj => {
-                scene.remove(obj);
-                if (obj.geometry) obj.geometry.dispose();
-                if (obj.material) obj.material.dispose();
-            });
-            objects = [];
-            selectedObject = null;
-            updateUI();
-            
-            status.textContent = '🧹 すべてのオブジェクトを削除しました';
-            setTimeout(() => {
-                status.textContent = '画面をタップして3Dオブジェクトを配置してください';
-            }, 2000);
-        }
-        
-        // UI更新
-        function updateUI() {
-            objectCountSpan.textContent = objects.length;
-            selectedObjectSpan.textContent = selectedObject 
-                ? `${selectedObject.userData.type} (ID: ${selectedObject.userData.id})`
-                : 'なし';
-        }
-        
-        // ウィンドウリサイズ
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        
-        // 初期化実行
-        window.addEventListener('load', init);
+
+        newEntity.setAttribute('position', position);
+        newEntity.setAttribute('color', '#'+Math.floor(Math.random()*16777215).toString(16));
+        newEntity.setAttribute('shadow', 'receive: true; cast: true;');
+        newEntity.setAttribute('animation__scale', 'property: scale; from: 0 0 0; to: 1 1 1; dur: 500; easing: easeOutElastic');
+
+        scene.appendChild(newEntity);
+      });
     </script>
-</body>
+  </body>
 </html>
