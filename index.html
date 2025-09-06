@@ -1,75 +1,125 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>AR.js 安定版 + 3Dモデル表示</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.rawgit.com/jeromeetienne/ar.js/2.2.1/aframe/build/aframe-ar.min.js"></script>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 学習項目</title>
+    <!-- Tailwind CSSを読み込みます -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        background-color: black;
-      }
-      #startButton {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        padding: 20px 40px;
-        font-size: 18px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        z-index: 10;
-      }
-      #arScene {
-        display: none;
-      }
+        /* テーブルのセルのテキストを中央揃えにするためのカスタムスタイル */
+        th, td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        /* 中項目と学習目標のテキストは左揃えにします */
+        td.align-left {
+            text-align: left;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
     </style>
-  </head>
-  <body>
-    <!-- Start ボタン -->
-    <button id="startButton">ARをはじめる</button>
-
-    <!-- A-Frame + AR.js のシーン -->
-    <a-scene
-      id="arScene"
-      embedded
-      arjs="sourceType: webcam; debugUIEnabled: true;"
-      vr-mode-ui="enabled: false"
-      renderer="logarithmicDepthBuffer: true;"
-    >
-      <!-- Hiro マーカーに3Dモデルを表示 -->
-      <a-marker preset="hiro">
-        <a-gltf-model
-          src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Duck/glTF/Duck.gltf"
-          scale="0.5 0.5 0.5"
-          position="0 0 0"
-          rotation="0 0 0"
-        ></a-gltf-model>
-      </a-marker>
-
-      <!-- カメラ -->
-      <a-entity camera></a-entity>
-    </a-scene>
-
-    <script>
-      // ボタンクリックでAR開始
-      document.getElementById('startButton').addEventListener('click', function () {
-        document.getElementById('startButton').style.display = 'none';
-        document.getElementById('arScene').style.display = 'block';
-      });
-    </script>
-  </body>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+    <div class="container mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+                <!-- テーブルヘッダー -->
+                <thead>
+                    <tr class="bg-gray-800 text-white">
+                        <th class="p-3 font-semibold border border-gray-300 w-1/12">大項目</th>
+                        <th class="p-3 font-semibold border border-gray-300 w-2/12">中項目</th>
+                        <th class="p-3 font-semibold border border-gray-300 w-3/12">学習目標</th>
+                        <th class="p-3 font-semibold border border-gray-300 w-3/12">学習項目</th>
+                        <th class="p-3 font-semibold border border-gray-300 w-3/12">詳細キーワード</th>
+                    </tr>
+                </thead>
+                <!-- テーブルボディ -->
+                <tbody>
+                    <!-- 第1章 AI（人工知能） -->
+                    <tr>
+                        <td class="p-3 border border-gray-300 font-semibold" rowspan="20">第1章<br>AI (人工知能)</td>
+                        <td class="p-3 border border-gray-300 font-semibold" rowspan="3">AI (人工知知能) の定義</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="3">AIの定義をはじめとした、AIの基礎的な概念を理解する</td>
+                        <td class="p-3 border border-gray-300 align-left"><a href="https://drive.google.com/file/d/1TZayc3IXbYToAnKm_3mbH8agSrwbUBrI/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">AIとは</a></td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="3">AI (人工知能)、ダートマス会議</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left"><a href="https://drive.google.com/file/d/1A-c3cGaA3sVQhy1zSjvxU-Gos2AEXVz2/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">AIとロボットの区別</a></td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left"><a href="https://drive.google.com/file/d/1IwzIu0du1XpdWjXo1BAB_6-2Sw5cAS0s/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">AIの研究</a></td>
+                    </tr>
+                    <!-- AIに知能をもたらす仕組み -->
+                    <tr>
+                        <td class="p-3 border border-gray-300 font-semibold" rowspan="11">AIに知能をもたらす仕組み</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="11">AIが機能するための要素とその仕組みを理解し、AIと呼ばれる由来やその性質を学習する</td>
+                        <td class="p-3 border border-gray-300 align-left">知能をもたらす2つの仕組み</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="11">ルールベース、機械学習、学習済みモデル、教師あり学習、教師なし学習、クラスタリング、次元削減、強化学習、半教師あり学習、ノーフリーランチ定理、ニューロン、シナプス、人工ニューロン (ノード)、ニューラルネットワーク、ディープラーニング、重み、情報の重みづけ、過学習、正則化、ドロップアウト、転移学習</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">ルールベースとは</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">機械学習とは</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">機械学習の手法</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">機械学習の考え方</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">人間の脳とニューラルネットワーク</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">AIが画像を認識する仕組み</td>
+                    </tr>
+                     <tr>
+                        <td class="p-3 border border-gray-300 align-left">AIが自ら学習して改善される仕組み</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">過学習 (オーバーフィッティング)</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">過学習を避ける手法</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">転移学習</td>
+                    </tr>
+                    <!-- AIの種類 -->
+                    <tr>
+                        <td class="p-3 border border-gray-300 font-semibold" rowspan="2">AIの種類</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="2">実生活で利用されているAIと、その種類を理解する</td>
+                        <td class="p-3 border border-gray-300 align-left">AIの4つのレベル</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="2">特徴量、弱いAI(ANI)、強いAI(AGI)</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">弱いAI (ANI) と強いAI (AGI)</td>
+                    </tr>
+                    <!-- AIの歴史 -->
+                    <tr>
+                        <td class="p-3 border border-gray-300 font-semibold" rowspan="3">AIの歴史</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="3">AIの誕生から現在までの変遷を学習する</td>
+                        <td class="p-3 border border-gray-300 align-left">第一次AIブーム</td>
+                        <td class="p-3 border border-gray-300 align-left" rowspan="3">第一次AIブーム、探索、推論、第二次AIブーム、エキスパートシステム、AIの冬、第三次AIブーム、ビッグデータ</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">第二次AIブーム</td>
+                    </tr>
+                    <tr>
+                        <td class="p-3 border border-gray-300 align-left">第三次AIブーム</td>
+                    </tr>
+                    <!-- シンギュラリティ -->
+                    <tr>
+                        <td class="p-3 border border-gray-300 font-semibold">シンギュラリティ (技術的特異点)</td>
+                        <td class="p-3 border border-gray-300 align-left">シンギュラリティの基本的な概念を学習する</td>
+                        <td class="p-3 border border-gray-300 align-left">シンギュラリティ (技術的特異点)</td>
+                        <td class="p-3 border border-gray-300 align-left">シンギュラリティ (技術的特異点)、ヴァーナー・ヴィンジ、レイ・カーツワイル、2045年問題、AI効果</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
 </html>
-
-
-
-
-
-
-
-
