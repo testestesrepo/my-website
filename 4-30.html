@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `AIガバナンスとは、AIを安全に、安心して使うための「組織としてのルール作りや管理体制」のことであり、一度構築すれば変更する必要はない。`,
+        answer: '×',
+        explanation: `AIガバナンスが「組織としてのルール作りや管理体制」であるという点は正しいです。しかし、一度作って終わりではなく、社会環境や技術の変化に合わせて継続的に見直し、改善していくサイクルが重要です。`
+      },
+      {
+        index: 2,
+        text: `AIガバナンス構築の最初のステップは、具体的な管理体制やルールを定める「AIマネジメントシステム設計・運用」である。`,
+        answer: '×',
+        explanation: `AIガバナンス構築のサイクルにおける最初のステップは、「環境・リスク分析」です。これは、AIがもたらす便益（良い影響）とリスク（悪い影響）を事前に考え、分析する段階です。具体的な仕組みを作る「AIマネジメントシステム設計・運用」は3番目のステップです。`
+      },
+      {
+        index: 3,
+        text: `AIガバナンス・ゴールとは、AIのリスク分析の結果などを踏まえて設定される、組織として「何を達成するのか」を明確にした目標のことである。`,
+        answer: '○',
+        explanation: `その通りです。AIガバナンス・ゴールは、ステップ1の「環境・リスク分析」の結果を踏まえ、「AIを適切に管理・運用するための目標」として設定されます。例えば、「AIによる判断の透明性を確保する」といった具体的な目標がこれにあたります。`
+      },
+      {
+        index: 4,
+        text: `AIマネジメントシステムには、AI開発の責任者や担当者を定める「体制の整備」や、従業員への「教育・訓練」などが含まれる。`,
+        answer: '○',
+        explanation: `その通りです。AIマネジメントシステムは、設定したゴールを達成するための具体的な仕組みであり、その内容例として「体制の整備（誰が責任者か）」や「従業員に必要な知識やスキルをどう身につけさせるか（教育・訓練）」などが挙げられています。`
+      },
+      {
+        index: 5,
+        text: `アジャイル・ガバナンスとは、最初に完璧なルールを作り、それを厳格に運用し続けることで、AI社会の変化に対応する考え方である。`,
+        answer: '×',
+        explanation: `アジャイル・ガバナンスは、その逆のアプローチです。最初に完璧なルールを作るのではなく、まず動ける範囲でルールを作り、運用しながら継続的に改善・アップデートしていくことで、技術や社会の急速な変化に柔軟に対応することを目指す考え方です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

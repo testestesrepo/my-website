@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `従来の言語モデル（LM）と大規模言語モデル（LLM）の最も大きな違いは、学習データの「質」である。`,
+        answer: '×',
+        explanation: `従来の言語モデル（LM）とLLMの最も大きな違いは「規模」です。LLMは、学習したデータの「量」と、AIの脳の複雑さを表す「パラメータ」の数が圧倒的に大きいとされています。質の高いデータも重要ですが、決定的な違いは規模にあります。`
+      },
+      {
+        index: 2,
+        text: `LLMの基礎学習である「プレトレーニング」とは、AI開発者が手作業で大量の正解ラベルを付けたデータセットを学習させる方法のことである。`,
+        answer: '×',
+        explanation: `プレトレーニング（事前学習）は、膨大な文章データを使って、AI自身に言葉のパターンや文法ルールを覚えさせる方法です。「猫が○○で鳴いている」のような文章の空欄を予測する「穴埋め問題」を大量に解くイメージで、人間が正解ラベルを付ける教師あり学習とは異なります。`
+      },
+      {
+        index: 3,
+        text: `AIの性能を最大限に引き出すための設定値である「ハイパーパラメータ」は、AI自身が学習の過程で自動的に調整していくものである。`,
+        answer: '×',
+        explanation: `ハイパーパラメータは、いわば「AIの育て方や教育方針」を決める設定のことであり、AI開発者が試行錯誤を繰り返して調整するものです。料理のレシピで最高の味を出すために火加減や調理時間を調整するのに似ていると説明されています。AIが自動で調整するものではありません。`
+      },
+      {
+        index: 4,
+        text: `LLMのパラメータ「Temperature」の値を低く設定すると、より独創的で面白い回答が生成されやすくなる。`,
+        answer: '×',
+        explanation: `「Temperature」は、生成される文章の「創造性」を調整する設定です。「Temperature」の値を低く（0に近い）設定すると、より正確で予測しやすい堅実な回答が生成されます。逆に値を高くすると、より多様で独創的な回答が出やすくなりますが、間違いや不自然な文章も出やすくなります。`
+      },
+      {
+        index: 5,
+        text: `LLMのパラメータ「Top-p」は、AIが次に出力する単語の候補を、確率的に可能性が高いものだけに絞り込むための設定である。`,
+        answer: '○',
+        explanation: `「Top-p」は、AIが次にどの単語を選ぶか、その「選択肢の候補をどれくらいに絞るか」を決める設定です。値を小さくすると、可能性が非常に高いごく少数の単語だけが候補となり、より確実な単語が選ばれます。これは問題文の記述と一致します。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

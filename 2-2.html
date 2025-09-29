@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `ディープラーニングは、人間がコンピューターに「ルール」や「パターン」を一つ一つ教え込むことで、AIが賢くなる技術である。`,
+        answer: '×',
+        explanation: `ディープラーニングは、人間がルールを教え込むのではなく、大量のデータの中からAI（コンピューター）が自動で「ルール」や「パターン」を見つけ出す技術です。`
+      },
+      {
+        index: 2,
+        text: `ディープラーニングが「ディープ（深い）」と呼ばれる理由は、AIが非常に難解で深い知識を学習するためである。`,
+        answer: '×',
+        explanation: `「ディープ（深い）」と呼ばれる理由は、情報を処理する「層」が何層にも深く重なっている、その構造に由来します。入力層、中間層、出力層といった層が深く重なることで、より複雑なパターンを学習できるようになります。`
+      },
+      {
+        index: 3,
+        text: `自己回帰モデルは、文章全体の文脈を一度に理解し、最も適切な単語を予測して文章を生成する仕組みである。`,
+        answer: '×',
+        explanation: `自己回帰モデルは、文章全体を一度に理解するのではなく、「直前の情報」をヒントにして「次に来る情報」を予測する仕組みです。しりとりのように、前の単語を手がかりに次の単語を一つずつ予測し、それを繰り返して文章を組み立てていきます。`
+      },
+      {
+        index: 4,
+        text: `生成AIは、ディープラーニングという「脳」だけで、人間のような自然な文章を作り出している。`,
+        answer: '×',
+        explanation: `生成AIは、ディープラーニング（脳）と自己回帰モデル（話し方）という2つの仕組みを連携させて文章を作っています。ディープラーニングが蓄えた膨大な言葉のパターンの知識を、自己回帰モデルが文脈に合わせて一つずつ単語を選び、文章として組み立てる役割を担っています。`
+      },
+      {
+        index: 5,
+        text: `自己回帰モデルの「自己」とは、AI自身が元々持っている固有の知識のことを指す。`,
+        answer: '×',
+        explanation: `自己回帰モデルの「自己」とは、「自分が直前に出力した情報」を指します。そして「回帰」は、その直前の情報（自己）を振り返って（参考にして）次を予測するという意味です。つまり、AI自身の出力結果を次の入力の参考にすることから、この名前がついています。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `AI（人工知能）は、専門的な分野でしか使われていない特別な技術であり、私たちの日常生活ではほとんど使われていない。`,
+        answer: '×',
+        explanation: `AIは特別なものではなく、スマートフォンやネットショッピングなど、すでに私たちの生活に溶け込んでいる身近な存在です。例えば、スマートフォンの音声アシスタントや、ネットショッピングのおすすめ機能、迷惑メールの自動振り分けなどにAI技術が活用されています。`
+      },
+      {
+        index: 2,
+        text: `AIは「人間のような知的なふるまい」を実現する技術だが、それは人間の脳と全く同じ仕組みで思考しているわけではない。`,
+        answer: '○',
+        explanation: `AIは人間の頭の中と全く同じ仕組みで考えているわけではありません。しかし、まるで人間が考えたかのような質問応答や画像分類といった「ふるまい」をすることができます。ポイントは、結果として人間のように知的な「ふるまい」ができる点にあります。`
+      },
+      {
+        index: 3,
+        text: `AIという言葉は「Artificial Intelligence」の略だが、その厳密な定義は一つに定まっており、研究者の間でも解釈が異なることはない。`,
+        answer: '×',
+        explanation: `AIはまだ発展し続けている新しい技術であるため、研究者や専門家によって少しずつ解釈が異なり、厳密な定義は一つに決まっていません。そのため、「AIとは、人間のように賢くふるまうことを目指す技術」という大きなイメージを持っておくことが重要です。`
+      },
+      {
+        index: 4,
+        text: `AIができる「知的なふるまい」の例として、スマートフォンの顔認証や、将棋や囲碁で最適な答えを見つけることなどが挙げられる。`,
+        answer: '○',
+        explanation: `これらはAIができる「知的なふるまい」の具体例です。AIは、画像や映像を見て何が写っているか判断したり（顔認証など）、ルールを学んで最適な答えを見つけたり（将棋AIなど）することができます。`
+      },
+      {
+        index: 5,
+        text: `AIを日本語に訳すと「人工知能」となり、その意味は「人の手によって作られた、人間のような賢さ」ということである。`,
+        answer: '○',
+        explanation: `AIは「Artificial Intelligence」の頭文字をとった言葉です。Artificialは「人工的な」、Intelligenceは「知能、賢さ」を意味するため、日本語の「人工知能」に訳され、「人の手によって作られた、人間のような賢さ」と説明できます。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

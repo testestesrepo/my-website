@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `インターネットリテラシーとは、単にパソコンやスマートフォンの操作が上手になるための技術的な知識のことである。`,
+        answer: '×',
+        explanation: `インターネットリテラシーは、単なるパソコン操作の知識ではありません。インターネットを安全かつ有効に活用するための「総合的な力」を指し、「テクノロジーの理解」「情報リテラシー」「セキュリティとプライバシー」「デジタル市民権」という4つの主要な力で構成されています。`
+      },
+      {
+        index: 2,
+        text: `インターネット上の情報を扱う際、それが本当かどうか、誰が発信しているかを確認し、感情的な言葉や大げさな表現に注意することは「情報リテラシー」に含まれる。`,
+        answer: '○',
+        explanation: `その通りです。情報リテラシーとは「インターネット上の膨大な情報の中から、本当に価値のある情報を見つけ出し、正しく活用する力」です。その重要なステップとして、「情報の真偽を見抜く」ことがあり、発信者の確認や、感情的・誇張的な表現への注意が具体例としてあります。`
+      },
+      {
+        index: 3,
+        text: `「デジタル市民権（デジタル・シティズンシップ）」とは、インターネットの世界では現実社会と違って匿名性が高いため、現実社会のマナーに縛られず自由に行動することを指す。`,
+        answer: '×',
+        explanation: `デジタル市民権は、インターネット社会の一員としての責任と自覚を持つことです。現実社会のマナーと同じで、誹謗中傷の禁止や著作権の尊重など、顔が見えない世界だからこそ、より一層の思いやりと責任ある行動が求められます。`
+      },
+      {
+        index: 4,
+        text: `インターネットのセキュリティ対策は家の「戸締り」に例えることができる。具体的には、SNSの公開範囲を限定することは「頑丈な鍵をつける」ことに相当する。`,
+        answer: '×',
+        explanation: `SNSの公開範囲を限定するなどのプライバシー保護は「カーテンを閉める」ことに相当します。一方で、ウイルス対策ソフトを導入するなどして外部からの侵入を防ぐセキュリティ対策が「頑丈な鍵をつける」ことにあたります。セキュリティ（侵入を防ぐ）とプライバシー（情報を区別する）の違いを正しく理解することが重要です。`
+      },
+      {
+        index: 5,
+        text: `インターネットの仕組みについて、エンジンの構造のように詳細に理解していなくても、その長所や短所、「情報は消えにくい」といった特性を知っておくことが安全利用の第一歩である。`,
+        answer: '○',
+        explanation: `その通りです。エンジンの詳しい構造を知らなくても運転はできますが、「車は急に止まれない」という特性を知らないと事故につながるように、インターネットもその仕組みの詳細な知識は不要でも、「デジタルタトゥー」のように情報が消えにくいといった特性を理解することが、安全な利用につながります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

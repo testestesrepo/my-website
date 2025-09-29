@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `A機械学習とは、人間がAIに一つ一つの正解を細かくプログラミングで教え込むことで、AIが柔軟な判断力を持つようになる仕組みのことである。`,
+        answer: '×',
+        explanation: `機械学習は、人間がAIに一つ一つの正解を細かく指示する（プログラミングする）のではありません 。大量のデータ（例題と正解）をAIに見せることで、AI自身がデータの中からパターンやルールを見つけ出し、判断基準を自ら学んでいく仕組みです。この「自ら気づかせる」というアプローチが、AIに柔軟な判断力をもたらします。`
+      },
+      {
+        index: 2,
+        text: `「ノーフリーランチ定理」によれば、あらゆる問題に対して常に最高の結果を出せる、万能なAIモデルが最終的には開発されるとされている。`,
+        answer: '×',
+        explanation: `「ノーフリーランチ定理」は、その逆を説明する考え方です。つまり、「どんな問題に対しても、常に最高の結果を出せる、たった一つの万能な解決策（AIモデル）は存在しない」ということを意味します。ある問題で非常に高い性能を発揮するAIは、別の問題では性能が低いというトレードオフの関係があるため、万能なAIは存在しないとされています。`
+      },
+      {
+        index: 3,
+        text: `AIには得意なことと苦手なことがある理由は、AIの賢さが特定の目的のために、特定のデータセットで学習した結果だからである。`,
+        answer: '○',
+        explanation: `その通りです。AIの能力は、その学習に使われたデータと、達成しようとする特定の目的に依存します 。例えば、犬や猫の写真を見分けるように学習した画像認識AIが、詩や物語を作ることができないのはこのためです。万能な調理器具が存在しないのと同じように、AIも目的に応じて使い分ける必要があります。`
+      },
+      {
+        index: 4,
+        text: `AI開発において最も重要なことは、まず最新のAIモデルを選択し、そのモデルが解ける問題を見つけ出すことである。`,
+        answer: '×',
+        explanation: `AI開発の現場では、まず「どんな問題を解決したいのか」という目的を明確にすることがスタート地点となります。解決したい問題の性質に合わせて、その目的に最も合ったAIの設計図や学習方法（モデル）を選ぶのが正しい順序です。AI開発者は「道具を選ぶ職人」に例えられるように、解きたい問題という「材料」に対して、最適な「道具（AI）」を選ぶ専門家です。`
+      },
+      {
+        index: 5,
+        text: `ある翻訳AIが日本語を英語に高い精度で翻訳できたとしても、そのAIが医療画像を分析して病気を診断することはできない。これはAIの「適材適所」の考え方の一例と言える。`,
+        answer: '○',
+        explanation: `はい、これはAIの「適材適所」を示す良い例です。翻訳AIは言語の翻訳を得意としていますが 、医療画像の分析は専門外です。それぞれのAIは特定のタスクを解決するために特化して作られているため、解決したい問題の性質に合わせて、最も適したAIを選ぶことが重要になります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

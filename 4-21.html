@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `生成AIに企業の「営業秘密」を入力すると、その情報がAIの学習データとして利用され、他の利用者の回答として出力される可能性があるため、不正競争防止法上のリスクがある。`,
+        answer: '○',
+        explanation: `生成AIに入力された情報は学習データとして利用される可能性があります。一度学習データとして取り込まれると、意図せず他のユーザーへの回答に含まれてしまい、企業の重要な「営業秘密」が漏洩するリスクがあります。これは不正競争防止法で保護されるべき営業秘密の侵害にあたる可能性があります。`
+      },
+      {
+        index: 2,
+        text: `情報が法的に「営業秘密」として保護されるためには、「会社にとって事業上の価値があること（有用性）」と「まだ世間に知られていないこと（非公知性）」の2つの条件を満たせば十分である。`,
+        answer: '×',
+        explanation: `「営業秘密」と認められるためには、3つの条件をすべて満たす必要があります。具体的には、秘密として管理されていること（秘密管理性） 事業に役立つこと（有用性） 世間に知られていないこと（非公知性） の3点です。設問では「秘密管理性」が抜けているため、誤りです。パスワード設定やアクセス制限といった管理がなされている必要があります。`
+      },
+      {
+        index: 3,
+        text: `もし誤って営業秘密を生成AIに入力してしまった場合でも、そのAIが生成した制作物から元の秘密が推測できなければ、その生成物を利用しても法的な問題はない。`,
+        answer: '×',
+        explanation: `元の営業秘密が推測できるような生成物を利用することは、不正競争防止法上のリスクを伴います。たとえ意図的でなくとも、「知らなかった」では済まされない可能性があります。リスクを避けるため、誤って営業秘密を入力した場合は、その情報から生成されたものは利用しないのが原則です。`
+      },
+      {
+        index: 4,
+        text: `生成AIを利用して新たに作成した企画書や設計図は、人間が作成したものではないため、不正競争防止法における「営業秘密」として保護されることはない。`,
+        answer: '×',
+        explanation: `生成AIを使って新しく生み出した情報も、会社の資産です。その生成物が「秘密管理性」「有用性」「非公知性」の3つの条件を満たす限り、人間が作成したものと同様に「営業秘密」として保護されます。したがって、会社のルールに従って適切に管理する必要があります。`
+      },
+      {
+        index: 5,
+        text: `顧客リストや販売マニュアルは、企業の重要な情報ではあるが、技術データや設計図とは異なるため、不正競争防止法で保護される「営業秘密」には該当しない。`,
+        answer: '×',
+        explanation: `「営業秘密」として入力してはいけない情報の例として、「顧客リスト、販売マニュアル」や「未公開の技術データ、設計図」があります。顧客情報や営業ノウハウも、秘密として管理され、事業上の価値があり、公に知られていなければ、技術情報と同様に法律で保護されるべき重要な「営業秘密」に該当します。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

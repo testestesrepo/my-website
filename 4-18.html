@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `肖像権は、有名人や芸能人といった、社会的に広く知られた人物のプライバシーを保護するための権利であり、一般人には適用されない。`,
+        answer: '×',
+        explanation: `肖像権は、有名人だけでなく、すべての人に認められている基本的な権利です。自分の顔や姿を無断で撮影されたり、公開されたりしないように個人のプライバシーを守ることを目的としています。`
+      },
+      {
+        index: 2,
+        text: `観光地で風景写真を撮影した際、大勢の通行人の一人が小さく写り込んでしまった。この写真が誰だか特定できない程度であれば、本人の許可なくSNSに投稿しても肖像権の侵害にはあたらない場合がある。`,
+        answer: '○',
+        explanation: `判例上、偶然の写り込みで、かつその人物が誰であるか特定できないような場合は、社会生活上、受忍すべき限度内と判断され、肖像権の侵害にあたらないとされることがあります。ただし、誰だかハッキリと特定できる状態で無断公開すると、侵害と判断されやすくなります。`
+      },
+      {
+        index: 3,
+        text: `パブリシティ権は、個人のプライバシー（人格）を守ることを主な目的とした権利である。`,
+        answer: '×',
+        explanation: `プライバシー（人格）を守ることを主な目的とするのは肖像権です。一方、パブリシティ権は、有名人の名前や写真などが持つ「顧客吸引力」といった経済的な価値を守ることを目的としています。`
+      },
+      {
+        index: 4,
+        text: `他人の社会的評価を下げるような内容を公の場で発信した場合、その内容が事実（本当のこと）であれば、名誉毀損が成立することはない。`,
+        answer: '×',
+        explanation: `名誉毀損は、書かれた内容が事実であっても、その人の社会的な評価を下げるものであれば成立する場合があります。公共の利害に関する事実で、公益を図る目的があり、内容が真実であると証明された場合などに限り、違法性が否定されることがあります。`
+      },
+      {
+        index: 5,
+        text: `生成AIを使用して作成した著名人の偽画像であっても、それがAIによる生成物であると明記すれば、本人の許可なく商品化して販売してもパブリシティ権の侵害にはならない。`,
+        answer: '×',
+        explanation: `生成AIで作成したものであっても、現実の人物と同様に他者の権利を尊重する必要があります。著名人の氏名や肖像が持つ顧客吸引力を無断で利用して商品を販売する行為は、パブリシティ権の侵害にあたる可能性が非常に高いです。AI生成物であることの明記は、権利侵害を免れる理由にはなりません。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `テキスト生成AIは、人間のように自然な会話ができるだけでなく、入力された文章の続きとして最も確率が高い単語を統計的に予測することで、文章を生成している。`,
+        answer: '○',
+        explanation: `テキスト生成AIは大量のテキストデータを学習し、「この単語の後には、この単語が来やすい」という言葉の繋がり（パターン）を統計的に覚えています。そして、入力された文章の続きとして最も自然（確率が高い）言葉を予測し、繋げていくことで文章を作成します。したがって、この記述は正しいです。`
+      },
+      {
+        index: 2,
+        text: `テキスト生成AIは、新しい企画やキャッチコピーのアイデアを多数提案してくれるため、アイデア出しのパートナーとして活用できるが、その反面、メール作成や議事録要約といった定型的な文章作成の自動化は苦手である。`,
+        answer: '×',
+        explanation: `テキスト生成AIのメリットとして、「アイデア出しのパートナーになる」ことと同時に、「作業時間の大幅な短縮」があります。メール作成や議事録の要約といった定型的な文章作成の自動化は、まさにAIが得意とするところです。したがって、「定型的な文章作成の自動化は苦手である」という記述は誤りです。`
+      },
+      {
+        index: 3,
+        text: `テキスト生成AIが生成した回答は、事実に基づいているように見えても、内容が間違っている「ハルシネーション（嘘の情報）」を含む可能性があるため、利用者は必ず情報の裏付けを取る（ファクトチェック）必要がある。`,
+        answer: '○',
+        explanation: `テキスト生成AIは事実のように見えても中身が間違っている「嘘の情報（ハルシネーション）」を生成することがあります。そのため、「賢い付き合い方」として、AIからの回答を鵜呑みにせず、必ず裏付けを取る（ファクトチェック）ことが重要です。したがって、この記述は正しいです。`
+      },
+      {
+        index: 4,
+        text: `Googleが開発した「Claude」とAnthropic社が開発した「Gemini」は、代表的なテキスト生成AIサービスであり、どちらも最新情報に基づいた回答が得意という共通の特徴を持っている。`,
+        answer: '×',
+        explanation: `代表的なテキスト生成AIサービスに、Google開発の「Gemini」とAnthropic社開発の「Claude」があります。開発元が逆になっています。また、「Gemini」は最新情報に基づいた回答が得意、「Claude」はより自然で丁寧な文章生成が得意です。したがって、この記述は誤りです。`
+      },
+      {
+        index: 5,
+        text: `テキスト生成AIに会社の機密情報や個人情報を入力しても、それらがAIの学習に利用されることはないため、情報漏洩のリスクを心配する必要はない。`,
+        answer: '×',
+        explanation: `入力した個人情報や会社の機密情報が、AIの学習データとして使われる可能性があリます。賢い付き合い方として、「個人情報・機密情報は入力しない」こと、そして「情報漏洩のリスクを常に意識する」ことが重要です。したがって、この記述は誤りです。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

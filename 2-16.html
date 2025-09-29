@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `GPT-4は、テキスト情報のみを処理できる言語モデルであり、画像情報を理解することはできない。`,
+        answer: '×',
+        explanation: `GPT-4の最大の特徴の一つは「マルチモーダル」です。これにより、従来のテキスト（文字）情報に加えて、画像情報も同時に理解し、処理することが可能になりました。例えば、手書きのメモからウェブサイトを作成したり、冷蔵庫の中身の写真からレシピを提案したりすることができます。`
+      },
+      {
+        index: 2,
+        text: `GPT-4はアメリカの司法試験の模擬試験で、人間と同等以上の成績を収めるなど、高度な専門知識を要求されるタスクも実行できる能力を持っている。`,
+        answer: '○',
+        explanation: `その通りです。GPT-4は、アメリカの司法試験（弁護士になるための試験）の模擬試験で、上位10%に入るほどの優秀な成績を収めました。これは、GPT-4が非常に高度で専門的な知識を理解し、論理的な文章を組み立てる能力を持っていることを示しています。`
+      },
+      {
+        index: 3,
+        text: `「ハルシネーション」とは、AIが学習データの中から正解を見つけ出せず、回答の生成を停止してしまう現象を指す。`,
+        answer: '×',
+        explanation: `ハルシネーションとは、AIが事実に基づいていない情報を、まるで事実であるかのように、もっともらしく生成してしまう現象のことです。AIは学習したデータから次に来る確率が最も高い言葉を予測して文章を作成するため、文脈上は自然でも内容が事実と異なる文章が作られてしまうことがあります。GPT-4ではこの現象が大幅に低減されましたが、完全になくなったわけではありません。`
+      },
+      {
+        index: 4,
+        text: `GPT-4は多言語能力が向上し、日本語を含む多くの言語で、GPT-3.5よりも自然で正確な文章を作成できるようになった。`,
+        answer: '○',
+        explanation: `はい、GPT-4は多言語能力が飛躍的に向上しました。日本語を含む25の言語でのテストでは、そのうち24の言語でGPT-3.5が英語で回答する精度を上回る結果を出しており、より自然で正確な翻訳や文章作成が可能になっています。`
+      },
+      {
+        index: 5,
+        text: `GPT-4は性能が大幅に向上し、ハルシネーション（もっともらしい嘘）を生成する可能性は完全になくなったため、生成された情報を事実確認する必要はない。`,
+        answer: '×',
+        explanation: `GPT-4は以前のモデルと比較して、ハルシネーションが発生する確率は大幅に低くなりましたが、完全になくなったわけではありません。そのため、AIの回答を鵜呑みにせず、特に重要な情報については、利用者自身で事実確認（ファクトチェック）をすることが引き続き大切です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

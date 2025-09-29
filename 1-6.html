@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `従来のAI開発では、「耳が三角で、ヒゲがあるのが猫」というように、人間がAIに一つ一つルールを教え込む必要があった。`,
+        answer: '○',
+        explanation: `その通りです。機械学習が登場する前の従来の方法では、人間が特定の条件（ルール）を定義し、それをプログラムとして記述する必要がありました。しかし、この方法では耳が折れている猫など、ルールに当てはまらない例外に対応するのが困難でした。`
+      },
+      {
+        index: 2,
+        text: `機械学習とは、人間がAIにルールを一切教えず、AIが自らの力だけで賢くなっていく技術のことである。`,
+        answer: '×',
+        explanation: `間違いです。機械学習は、人間が一つ一つルールを教えるのではなく、大量の「お手本データ」をAIに見せることで、AIがそのデータの中から自動的にルールやパターンを見つけ出す技術です。例えば、「これは猫」「これは猫ではない」と人間がラベル付けした画像データを大量に与えることで学習が進みます。人間がデータという形で学習の手助けをする点がポイントです。`
+      },
+      {
+        index: 3,
+        text: `大量のデータを学習し終えた後の、賢くなったAIの脳のようなものを「学習済みモデル」と呼ぶ。`,
+        answer: '○',
+        explanation: `その通りです。機械学習によってたくさんのデータを学習し、特定のタスク（例：猫を見分ける）をこなすためのルールやパターンが詰め込まれた状態のものを「学習済みモデル」と呼びます。新しいデータに対する判断や予測は、この学習済みモデルを使って行われます。`
+      },
+      {
+        index: 4,
+        text: `機械学習のプロセスでは、まず初めにAIが自らデータに共通する特徴を発見し、その後に人間が「これは猫の画像」といったラベル付けを行う。`,
+        answer: '×',
+        explanation: `プロセスの順序が逆です。機械学習の最初のステップ（ステップ1）は、人間が「これは猫」「これは猫じゃない」と正解ラベルを付けた大量の画像データを用意して、AIに与えることです。そのデータを受け取った後、次のステップ（ステップ2）で、コンピューターがデータの中から猫に共通する特徴を自動で発見します。`
+      },
+      {
+        index: 5,
+        text: `スマートフォンの顔認証やネット通販のおすすめ機能は、私たちの身近で機械学習が活用されている代表的な例である。`,
+        answer: '○',
+        explanation: `その通りです。機械学習は特別な技術ではなく、すでに私たちの生活に広く溶け込んでいます。迷惑メールフィルタ、ネット通販のおすすめ機能、スマートフォンの顔認証などは、まさに機械学習の技術が使われている身近な例です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

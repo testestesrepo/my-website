@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `生成AIに入力した情報は、後から「この情報は忘れて」と指示すれば、AIの記憶から消去させることができる。`,
+        answer: '×',
+        explanation: `生成AIは、一度入力された情報を善悪の区別なく記憶し、学習に利用する可能性があります。「物覚えの良い新人」に、後から「今の情報は内緒だよ」と伝えても、記憶から消すことはできないようなものです。`
+      },
+      {
+        index: 2,
+        text: `自分や他人の氏名、住所、電話番号などの個人情報は、AIが自動で個人を特定できないように処理してくれるため、入力しても問題ない。`,
+        answer: '×',
+        explanation: `氏名、住所、電話番号などの個人情報は、絶対に入力してはいけない情報です。これらの情報が漏洩すると、なりすましや詐欺などの犯罪に悪用される重大なリスクがあります。`
+      },
+      {
+        index: 3,
+        text: `生成AIへの情報入力は、カフェや電車の中での会話のように、誰に聞かれているか分からない「公の場での発言」と同じと心得るべきである。`,
+        answer: '○',
+        explanation: `その通りです。生成AIに入力した情報はインターネット上に残り続け、取り消すことが非常に困難です。そのため、「公の場での発言」と同じであると心得るべきです。`
+      },
+      {
+        index: 4,
+        text: `会社の会議の議事録は、社外秘の情報が含まれていない部分であれば、要約などの目的で生成AIに入力しても安全である。`,
+        answer: '×',
+        explanation: `会社の「機密情報」は入力厳禁であり、会議の議事録や社外秘の資料はその代表例です。一見断片的に見える情報でも、AIが他の情報と組み合わせることで、重要な情報が推測されてしまう危険性があります。`
+      },
+      {
+        index: 5,
+        text: `生成AIを安全に利用するためには、入力する情報が「会社のホームページやSNSに公開されても問題ないか？」と自問することが有効なルールの一つである。`,
+        answer: '○',
+        explanation: `その通りです。情報を入力する前に「公開しても良い情報か？」と一度立ち止まって考えることは、情報漏洩のリスクを大幅に減らすための、非常に重要で効果的な安全ルールです。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

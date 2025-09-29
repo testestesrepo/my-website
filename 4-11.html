@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `死者の氏名や住所に関する情報は、法律上の「個人情報」に該当する。`,
+        answer: '×',
+        explanation: `個人情報は「生きている個人に関する情報」が対象です。したがって、亡くなった方の情報は、原則としてこの法律の対象となる「個人情報」には含まれません。`
+      },
+      {
+        index: 2,
+        text: `「学校名」と「学籍番号」のように、単体では個人を特定できなくても、複数の情報を組み合わせることで特定の個人を識別できるものは「個人情報」にあたる。`,
+        answer: '○',
+        explanation: `情報単体、または他の情報と組み合わせることで、個人を特定できるものが「個人情報」です。具体例として「学校名」と「学籍番号」の組み合わせがあり、これは個人情報に該当します。`
+      },
+      {
+        index: 3,
+        text: `メールアドレスは、氏名や会社名が含まれていない限り、個人情報にはあたらない。`,
+        answer: '×',
+        explanation: `メールアドレスは、それ単体で個人を特定できない場合でも、会員情報のような「他の情報と組み合わせることで個人を特定できる」可能性があるため、個人情報に該当する場合があります。氏名が含まれていなくても、他の情報と照合できれば個人を特定できるため、注意が必要です。`
+      },
+      {
+        index: 4,
+        text: `指紋や顔の骨格などの身体的特徴をデータ化したものは「個人識別符号」と呼ばれ、個人情報の中でも特に重要なものとして扱われる。`,
+        answer: '○',
+        explanation: `「個人識別符号」は、それ一つで特定の個人を識別できる符号を指します。これには、指紋や顔認証データのような「身体の一部の特徴をデータ化したもの」が含まれ、特に重要な個人情報とされています。`
+      },
+      {
+        index: 5,
+        text: `運転免許証に記載されている顔写真は個人情報にあたるが、運転免許証番号は公的な番号であるため個人識別符号には該当しない。`,
+        answer: '×',
+        explanation: `運転免許証番号は、一人ひとりに割り当てられた公的な番号であり、「個人識別符号」の典型例です。顔写真だけでなく、この番号自体が強力な個人情報（個人識別符号）となります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

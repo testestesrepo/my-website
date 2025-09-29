@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `強いAI（AGI）は、人間のように意識や自我を持ち、未知の状況にも柔軟に対応する能力を持つが、既に我々の身近なところで実用化されている。`,
+        answer: '×',
+        explanation: `強いAI（AGI）は、人間と同等の知能を持ち、様々な課題を解決できる汎用人工知能とされています 。SF映画に出てくるような、人間と対等に話せるロボットがそのイメージです。しかし、強いAIはまだ実現しておらず、世界中の研究者が開発を進めている未来の目標です。`
+      },
+      {
+        index: 2,
+        text: `弱いAI（ANI）は、特定のタスクに特化して能力を発揮するAIであり、「特化型人工知能」とも呼ばれる。`,
+        answer: '○',
+        explanation: `その通りです。弱いAI（ANI）は、一つのことだけが非常に得意な「スペシャリスト」のようなAIです。例えば、「画像認識」「文章作成」「音声の文字変換」のように、決められた特定の範囲の作業や問題解決のために作られています。`
+      },
+      {
+        index: 3,
+        text: `現在、私たちが日常的に利用しているスマートフォンの音声アシスタントやお掃除ロボットは、すべて「強いAI」に分類される。`,
+        answer: '×',
+        explanation: `私たちの身の回りにあるAIは、すべて「弱いAI」です。スマートフォンの音声アシスタントやお掃除ロボットは、それぞれ「音声認識」「自律走行による清掃」という特定のタスクに特化しているため、弱いAI（ANI）に分類されます。`
+      },
+      {
+        index: 4,
+        text: `弱いAI（ANI）は、チェスや将棋でプロ棋士に勝利することができるが、人間のような意識や感情は持っていない。`,
+        answer: '○',
+        explanation: `その通りです。弱いAIは、特定のルールや膨大なデータの中では人間を上回る能力を発揮することがあります。チェスや将棋のAIはその代表例です。しかし、あくまで特定のタスクに特化しているだけであり、自分で意識を持ったり、感情を抱いたりすることはありません。`
+      },
+      {
+        index: 5,
+        text: `「弱いAI」はまだ研究開発段階の未来の目標であり、「強いAI」は既に広く実用化され、私たちの生活に浸透している。`,
+        answer: '×',
+        explanation: `逆です。弱いAI（ANI）は、既に実用化されており、私たちの身の回りの様々な製品やサービスで利用されています。一方で、強いAI（AGI）はまだ存在しておらず、未来の研究目標とされています。AIに関するニュースを見るとき、どちらのAIについて話しているのかを意識すると、理解が深まります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

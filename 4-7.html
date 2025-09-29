@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `ソーシャルエンジニアリング攻撃は、システムの脆弱性を突く高度なハッキング技術を主とした攻撃手法である。`,
+        answer: '×',
+        explanation: `ソーシャルエンジニアリング攻撃は、技術的なハッキングではなく、人間の心理的な隙や行動のミスを突く攻撃手法です。信頼や親切心、恐怖心などを巧みに利用して、情報を盗み出すのが特徴です。`
+      },
+      {
+        index: 2,
+        text: `特定の個人や組織を狙い撃ちにし、業務に関連するもっともらしい件名や本文でメールを送り、ウイルスに感染させようとする手口を「ベイト攻撃」という。`,
+        answer: '×',
+        explanation: `設問の手口は「スピアフィッシング」に該当します 。スピア（Spear）が「槍」を意味するように、特定のターゲットを狙って攻撃するのが特徴です。「ベイト攻撃」は、USBメモリをわざと落として拾わせたり、「ボーナス支給明細」のような魅力的なファイル名でウイルスメールを送ったりするなど、好奇心や欲といった「餌（Bait）」でターゲットを誘い込む手口です。`
+      },
+      {
+        index: 3,
+        text: `情報システムの担当者を名乗り、「システムの緊急メンテナンスのため、パスワードを教えてください」と電話で聞き出す手口は、「プレテキスト」と呼ばれる攻撃手法の一例である。`,
+        answer: '○',
+        explanation: `プレテキストは、「口実（Pretext）」を使ってターゲットを信用させ、情報を聞き出す手口です。設問のように、もっともらしい嘘の状況（口実）を作り出してパスワードなどを聞き出すのが典型的な例です。`
+      },
+      {
+        index: 4,
+        text: `生成AIを悪用すると、文法的な誤りや不自然な表現が少ない、本物らしいメール文章を大量に自動生成できるようになるため、攻撃を見破ることがより困難になるとされている。`,
+        answer: '○',
+        explanation: `文章作成AIを悪用することで、ターゲットに合わせてカスタマイズされた、極めて自然なメール文章を大量に自動生成することが可能になります。これにより、従来のフィッシングメールにありがちだった不自然な日本語がなくなり、見分けるのが非常に難しくなります。`
+      },
+      {
+        index: 5,
+        text: `個人情報に関する依頼がメールで届いた際は、送信元のメールアドレスが正しければ、セキュリティ対策として十分であり、メールの内容に従って対応しても問題ない。`,
+        answer: '×',
+        explanation: `金銭や個人情報に関する依頼が届いた場合は、送信元を安易に信用せず、メール以外の別の手段（電話や対面など）で本人に直接確認することが最も重要な対策です。メールアドレスは偽装されている可能性もあるため、送信元の確認だけでは不十分です。常に「まず疑う」という心構えが求められます。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

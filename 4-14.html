@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `匿名加工情報とは、特定の個人を識別できないように加工された情報のことであり、一度加工すれば、他のいかなる情報と組み合わせても個人が特定されるリスクは完全になくなる。`,
+        answer: '×',
+        explanation: `匿名加工情報は、それ単体では特定の個人を識別できないように加工されていますが、他の情報と組み合わせることで個人が特定されるリスクが残ります。例えば、「東京都に住む30代のAさん」という情報に「特定の珍しい趣味」などの情報が加わると、個人が推測できてしまう可能性があります。そのため、絶対安全とは言えず、元データの管理と加工のルールが重要になります。`
+      },
+      {
+        index: 2,
+        text: `データの「一般化」とは、年齢を「32歳」から「30代」のように、より範囲の広い情報に置き換える加工方法である。`,
+        answer: '○',
+        explanation: `解説の通りです。「一般化」は、年齢を「年代」に、市町村を「都道府県」にまとめるなど、より範囲の広い、抽象的な情報に置き換える加工方法です。これにより、データの有用性をある程度保ちつつ、個人が特定されるリスクを低減させることができます。`
+      },
+      {
+        index: 3,
+        text: `「マスキング」は、クレジットカード番号の一部を「*」で隠すように、データの一部を隠して見えなくする技術であり、生成AIへの入力時に個人情報が含まれる文章を処理する際にも応用される。`,
+        answer: '○',
+        explanation: `解説の通りです。マスキングは、データの一部を「*」のような記号で隠したり（伏せ字）、黒塗りにしたりする技術です。この技術は、生成AIに個人情報を含むテキストデータを渡す際に、該当箇所を隠してから処理させることで、情報漏洩のリスクを低減するために応用されます。`
+      },
+      {
+        index: 4,
+        text: `AI開発を効率的に進めるためには、できるだけ多くのデータが必要となるが、個人情報は法律で厳しくルールが定められているため、そのままでは使用できない。`,
+        answer: '○',
+        explanation: `解説の通りです。AIはデータが多ければ多いほど賢くなりますが 、通販サイトの購入履歴や地図アプリの移動履歴といった個人情報を無断で使用することは法律で禁じられています。そのため、個人情報を保護しつつデータを安全に活用する手段として「匿名加工情報」が利用されます。`
+      },
+      {
+        index: 5,
+        text: `匿名加工情報を作成する際の加工方法には、名前や住所などを消去する「削除」や、会員IDなどを無関係な記号に置き換える「置き換え」といった手法がある。`,
+        answer: '○',
+        explanation: `解説の通りです。匿名加工情報を作成する際の具体的な加工方法として、「削除」「一般化」「置き換え」などがあります。個人を直接特定できる情報を「削除」したり 、IDなどをランダムな値に「置き換え」たりすることで、個人が特定されるリスクを低減します。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

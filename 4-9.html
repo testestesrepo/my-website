@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `生成AIの技術が発展したことにより、フィッシングサイトや詐欺メールは、不自然な日本語やデザインのずれが目立つようになり、以前よりも見分けやすくなった。`,
+        answer: '×',
+        explanation: `生成AIの能力向上により、偽のサイトやメールの品質は著しく向上しています。プロが作成したかのような自然な文章や完璧なデザインをAIが自動生成するため、本物との見分けがつきにくくなっているのが現状です。`
+      },
+      {
+        index: 2,
+        text: `生成AIを使えば、専門知識や高価な機材がなくても、顔写真1枚と数秒の音声データから、本人が話しているかのようなリアルなフェイク動画を作成することが可能である。`,
+        answer: '○',
+        explanation: `生成AIは専門家でなくても手軽にリアルな動画を作成することを可能にしました。口の動きや表情も話す内容に合わせてAIが自動で生成するため、非常に精巧な偽動画が作られる可能性があります。`
+      },
+      {
+        index: 3,
+        text: `AIによる音声合成技術を使った「オレオレ詐欺」では、本人の声そっくりに再現できるため、「風邪をひいて声がおかしい」といった従来の詐欺で使われていたような言い訳が不要になる傾向がある。`,
+        answer: '○',
+        explanation: `SNSの動画投稿など、わずか数秒の音声データがあれば、AIはその人の声色や話し方の癖を学習し、自由に言葉を話させることが可能になります。そのため、本人の声と区別がつかないレベルで偽の電話をかけることができ、風邪などの言い訳は必要なくなります。`
+      },
+      {
+        index: 4,
+        text: `生成AIを悪用した詐欺は、SNSなどから騙されやすいターゲットを探し出し、そのターゲットに合わせたシナリオを作成し、メールやチャットのやり取りを自動で行うといった、一連のプロセスを自動化することができる。`,
+        answer: '○',
+        explanation: `生成AIは、ターゲット選定、シナリオ作成、コミュニケーションといった詐欺の各段階を自動で実行する能力を持っています。これにより、人間が介在することなく、低コストかつ大規模に詐欺を行う「詐欺の工場」のような状況が生まれると指摘されています。`
+      },
+      {
+        index: 5,
+        text: `国際ロマンス詐欺において生成AIは、架空の人物の魅力的なプロフィール写真を作成する段階で主に活用されるが、相手の心に響くメッセージのやり取りは、人間が手動で行う必要がある。`,
+        answer: '×',
+        explanation: `生成AIは、魅力的な顔写真や経歴といった偽のプロフィール作成だけでなく、ターゲットとのコミュニケーションにおいても悪用されます。心理学を応用し、相手の心に最も響く甘い言葉や同情を誘う物語をAIが自動で紡ぎ、24時間対応でメッセージを送り続けることが可能です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

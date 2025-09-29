@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>正誤問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px}
+
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>正誤問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `AIが自動で生成したイラストや文章には、人間の手が一切加わっていなくても、自動的に著作権が発生する。`,
+        answer: '×',
+        explanation: `著作権が発生するためには、原則として人間の「創作的な関与」が必要です。AIに「猫の絵を描いて」と指示しただけで生成された絵のように、AIが自動で生成しただけのものでは著作権は発生しません。人間がAIを道具として使い、具体的な指示や修正を繰り返して創作性を加えることで、初めて著作権が認められる可能性があります。`
+      },
+      {
+        index: 2,
+        text: `ある研究者がAIをツールとして利用して、画期的な新薬の化学構造を発明した。この場合、発明者は人間であるため、特許権が成立する可能性がある。`,
+        answer: '○',
+        explanation: `特許権は、新しい技術などの「発明」を守る権利です。人間がAIを道具（ツール）として使い、創作的に関与して発明を完成させた場合、その発明は人間によるものと見なされ、特許権が成立する可能性があります。AIが完全に自律的に行った発明には特許権は認められません。`
+      },
+      {
+        index: 3,
+        text: `AIが自動生成したスマートフォンのデザインを、ある企業がそのまま製品に採用した場合、そのデザインには意匠権が認められる。`,
+        answer: '×',
+        explanation: `意匠権は、製品の見た目の「デザイン」を守る権利であり、これも著作権や特許権と同様に、人間の「創作的な関与」がなければ成立しません。AIが自動で生成したデザインをそのまま利用するだけでは、人間の創作的な貢献がないため、意匠権は発生しません。`
+      },
+      {
+        index: 4,
+        text: `著作権、特許権、意匠権とは異なり、商標権は「創作性」よりも、人間による「使用」や「出願」が権利発生の重要な鍵となる。`,
+        answer: '○',
+        explanation: `その通りです。商標権は、会社名やロゴなど事業の「目印」を守る権利です。著作権・特許権・意匠権が人間の「創作的な関与」を重視するのに対し、商標権はAIが作ったロゴであっても、それを人間（または法人）が事業のために「使用」したり、特許庁に「出願」したりすることで権利が発生します。`
+      },
+      {
+        index: 5,
+        text: `AIが生成したものについて、他人の権利を侵害していないかどうかは、AIが自動でチェックしてくれるため人間が確認する必要はない。`,
+        answer: '×',
+        explanation: `AIが生成物を作る過程で、既存の著作物やデザインなどを学習データとして利用し、意図せず真似をしてしまう可能性があります。そのため、AI生成物を利用する際には、それが他人の著作権や特許権などを侵害していないか、人間が別途確認する責任があります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>
