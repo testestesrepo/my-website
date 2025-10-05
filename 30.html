@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `AIを開発・利用する際の「人間中心」の原則に関する説明として、最も不適切なものを次の選択肢から1つ選びなさい。
+① 人間の尊厳や自律性を尊重し、AIによって人々が操作されないように配慮する。
+② AIがもたらす恩恵を、一部の人だけでなく多様な人々が受けられるようにする。
+③ AIの判断が常に正しいとは限らないため、不当なバイアスや差別をなくすために人間の判断を介在させる。
+④ AIの利用目的やリスクについて、関係者に十分な情報を提供し、説明責任を果たす。`,
+        answer: '④',
+        explanation: `AIの利用目的やリスクについて情報を提供し、説明責任を果たすことは「アカウンタビリティ」の原則に含まれる要素です。「人間中心」の原則は、AIが人間の尊厳や自律性を脅かすことなく、多様な人々の幸福に貢献することを目指す考え方です。選択肢③の「人間の判断の介在」は「公平性」の項目に記載されていますが、人間の尊厳や自律性を守るという広い意味で「人間中心」の考え方にも関連します。しかし、④の説明責任は明確に「アカウンタビリティ」の原則として区別されるため、最も不適切です。`
+      },
+      {
+        index: 2,
+        text: `AIシステムにおいて、その挙動や判断の根拠を後から検証できるように、動作ログなどを記録・管理する取り組みが最も強く関連する原則はどれか。次の選択肢から1つ選びなさい。
+① 透明性
+② 安全性
+③ 公平性
+④ セキュリティ確保`,
+        answer: '①',
+        explanation: `「透明性」は、AIの意思決定プロセスや結果が、人間にとって理解可能であり、検証できる状態であることを目指す原則です。動作ログなどを記録し、事後的に検証できる仕組みを確保することは、透明性を担保するための具体的な手段の一つです。これにより、システムが意図通りに動作しているか、問題が発生した場合に原因を追跡することが可能になります。`
+      },
+      {
+        index: 3,
+        text: `AIにおける「公平性」の原則を確保するためのアプローチとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 外部からの攻撃やシステムが持つ脆弱性への対応を常に行う。
+② 異なるシステムやサービス間でのデータのやり取りや連携（相互運用性）を確保する。
+③ AIの学習データに含まれる可能性のある不適切な偏りを是正し、多様な視点からの評価を行う。
+④ AIに関する知識やスキルを向上させるための教育やリスキリングの機会を提供する。`,
+        answer: '③',
+        explanation: `「公平性」の原則は、AIが性別、人種、年齢といった特定の属性に基づいて不当な差別を行わないようにすることを目的とします。そのための重要なアプローチは、AIの判断に影響を与える学習データから不適切なバイアス（偏り）を排除・軽減することや、多様な価値観を持つ人々が評価に参加することです。`
+      },
+      {
+        index: 4,
+        text: `AIの利活用において、責任の所在を明確にし、利害関係者に対してリスクや対応状況を適切に説明できるようにする原則は何か。最も適切なものを次の選択肢から1つ選びなさい。
+① プライバシー保護
+② アカウンタビリティ
+③ イノベーション
+④ 教育・リテラシー`,
+        answer: '②',
+        explanation: `「アカウンタビリティ」は、日本語で「説明責任」と訳されます。AIシステムの開発者や提供者、利用者が、そのAIがもたらす結果について、利害関係者や社会に対して適切に説明できる状態を指します。具体的には、判断の過程を追跡できるトレーサビリティを確保したり、誰がどのような責任を負うのかを明確にしたりすることが求められます。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

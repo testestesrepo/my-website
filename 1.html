@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `AIの「役割」に関する説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① 物理的な世界で実際に作業を行う部分
+② データを分析し、物事を判断したり考えたりする部分
+③ 情報を保存しておくための記憶装置
+④ 人間がコンピュータを操作するための入力インターフェース`,
+        answer: '②',
+        explanation: `AIは、データから学習し、人間のように「考える」「判断する」といった知的な活動を担う部分であり、コンピューターの「脳」に例えられます。物理的に動く「体」の役割を担うのはロボットです。`
+      },
+      {
+        index: 2,
+        text: `AIとロボットの「性質」に関する記述として、最も適切なものを次の選択肢から1つ選びなさい。
+① AIは形のあるハードウェア、ロボットは形のないソフトウェアである。
+② AIもロボットも、どちらも形のあるハードウェアである。
+③ AIは形のないソフトウェア、ロボットは形のあるハードウェアである。
+④ AIもロボットも、どちらも形のないソフトウェアである。`,
+        answer: '③',
+        explanation: `AIは人間の頭の中と全く同じ仕組みで考えているわけではありません。しかし、まるで人間が考えたかのような質問応答や画像分類といった「ふるまい」をすることができます。ポイントは、結果として人間のように知的な「ふるまい」ができる点にあります。`
+      },
+      {
+        index: 3,
+        text: `次のうち、AIの具体例に該当するが、ロボットの具体例には該当しないものを1つ選びなさい。
+① 工場で部品の組み立てを行う機械
+② レストランで料理を運ぶ機械
+③ 将棋や囲碁の対戦ソフトウェア
+④ 自動で床掃除を行う機械`,
+        answer: '③',
+        explanation: `将棋や囲碁のAIは、盤面の状況を判断して最適な手を考えるソフトウェアであり、物理的な体を持っていません。工場の組立機械、配膳ロボット、掃除ロボットなどは、物理的に動く「体」を持つためロボットに分類されます。`
+      },
+      {
+        index: 4,
+        text: `AIとロボットの「関係性」についての記述として、最も適切なものを次の選択肢から1つ選びなさい。
+① ロボットは、必ずAIを搭載して知的な判断を行っている。
+② AIは、必ずロボットという体を必要とする。
+③ AIとロボットは、それぞれ独立して存在する場合がある。
+④ AIを搭載した機械だけが「ロボット」と呼ばれる。`,
+        answer: '③',
+        explanation: `AIとロボットは必ずしもセットで存在するわけではありません。スマートフォンの音声アシスタントのようにAI単体で機能するものもあれば、決められた単純作業を繰り返すだけのAIを搭載していないロボットも存在します。それぞれが独立して成立する場合があります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

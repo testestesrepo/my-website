@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `不正競争防止法において「営業秘密」と認められるためには、3つの要件をすべて満たす必要があります。その要件の組み合わせとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 機密性、完全性、可用性
+② 秘密管理性、有用性、非公知性
+③ 独自性、先進性、収益性
+④ 公開性、共有性、永続性`,
+        answer: '②',
+        explanation: `営業秘密として法的に保護されるためには、その情報が「秘密として管理されており（秘密管理性）」、事業活動にとって「有用なものであり（有用性）」、一般的には「知られていない（非公知性）」という3つの要件をすべて満たす必要があります。顧客リストや製造ノウハウなどがこれに該当します。`
+      },
+      {
+        index: 2,
+        text: `企業の従業員が、業務で生成AIを利用する際に、最も注意すべき行為は次のうちどれか。最も適切なものを1つ選びなさい。
+① 一般に公開されているニュース記事を要約させるために、記事のURLを入力した。
+② 顧客リストや未公開の技術データを、分析や文章作成のためにAIに入力した。
+③ 自社のウェブサイトで公開している製品情報をAIに入力し、説明文を作成させた。
+④ 時候の挨拶メールの文面を考えるために、AIに「ビジネスメールの丁寧な挨拶文」と指示した。`,
+        answer: '②',
+        explanation: `顧客リストや未公開の技術データなどは、企業の「営業秘密」に該当する可能性が非常に高い情報です。これらを生成AIに入力すると、AIの学習データとして利用され、意図せず他社や第三者へ情報が漏洩してしまう重大なリスクがあるため、絶対に入力してはいけません。`
+      },
+      {
+        index: 3,
+        text: `営業秘密とは別に、不正競争防止法で保護の対象となる「限定提供データ」に関する説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① 官公庁が発行する白書や統計など、国民の誰もが利用できるデータ。
+② 社内の特定の部署のみで共有されているが、厳格なアクセス制限はされていないデータ。
+③ 特定の相手にのみ、有料などの対価を条件として提供されるデータ。
+④ 秘密管理性を満たさなくなったため、営業秘密としての保護を受けられなくなったデータ。`,
+        answer: '③',
+        explanation: `限定提供データとは、特定の相手に対し、有料で提供するなど、相当量のデータが限定された範囲で提供されるものを指します。営業秘密のように厳格な秘密管理がされていなくても保護の対象となるため、このようなデータを生成AIに入力する際にも営業秘密と同様の注意が必要です。`
+      },
+      {
+        index: 4,
+        text: `社員が業務において生成AIを使用して、全く新しい画期的な製品の設計図を生成した。このAI生成物の法的な保護に関する記述として、最も適切なものを次の選択肢から1つ選びなさい。
+① AIが生成したものは著作物とは認められないため、いかなる法的保護も受けられない。
+② 生成AIの利用規約に基づき、すべての権利はAIの開発企業に帰属する。
+③ 自動的に特許として登録され、企業は独占的な権利を持つことができる。
+④ 企業がその情報を営業秘密の3要件を満たすように管理すれば、新たな営業秘密として保護されうる。`,
+        answer: '④',
+        explanation: `AIを利用して独自に生成した情報であっても、その情報を「秘密として管理し（秘密管理性）」、それが「事業に有用で（有用性）」、かつ「一般に知られていない（非公知性）」という営業秘密の要件を満たすように適切に管理すれば、企業の新たな資産（営業秘密）として不正競争防止法による保護の対象とすることが可能です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

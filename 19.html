@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `動画生成AIがもたらすメリットとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 著作権や肖像権の問題を完全に回避できる
+② 専門的な知識がなくても誰でも映像クリエイターになれる可能性がある
+③ 生成される映像の動きが常に自然で、人間の目で見て違和感がない
+④ 制作にかかる費用は増えるが、制作時間を大幅に短縮できる`,
+        answer: '②',
+        explanation: `動画生成AIは、テキストや画像を入力するだけで動画を自動生成できるため、従来は専門的なスキルや高価な機材が必要だった映像制作のハードルを大きく下げます。これにより、誰もが映像クリエイターとして創造性を発揮できる可能性が広がります。著作権問題は依然として課題であり、技術的な限界から不自然な動きが生成されることもあります。また、コスト削減は大きなメリットの一つです。`
+      },
+      {
+        index: 2,
+        text: `動画生成AIの基盤技術に関する説明として、最も関連性の高いものを次の選択肢から1つ選びなさい。
+① 主にCPUを利用して高速なデータ処理を行い、動画を生成する
+② GAN（敵対的生成ネットワーク）などの技術を活用し、より高品質でリアルな映像の生成を目指している
+③ 倫理的な問題を解決するためのフィルター機能が標準で搭載されている
+④ インターネットに接続されていないオフライン環境での利用が基本となる`,
+        answer: '②',
+        explanation: `動画生成AIは、より本物に近い高品質な映像を作り出すために、GAN（敵対的生成ネットワーク）やVAE（変分オートエンコーダ）といった深層学習の技術を用いています。GANは、生成する側とそれを見破る側を競わせることで、生成物の品質を高める仕組みです。一般的に、AIの処理にはGPUが用いられ、倫理的な課題は依然として残っており、サービスの利用にはインターネット接続が必要です。`
+      },
+      {
+        index: 3,
+        text: `動画生成AIを利用する上での注意点や課題として、最も懸念されるべき倫理的問題を次の選択肢から1つ選びなさい。
+① AIが生成した動画の芸術性が低いこと
+② 悪意を持って作成されたフェイク動画が社会的な混乱を引き起こす可能性
+③ ソフトウェアの利用料金が高額であること
+④ 動画の生成に時間がかかりすぎること`,
+        answer: '②',
+        explanation: `動画生成AIは、実在しない映像を非常にリアルに生成できるため、その技術が悪用されるリスクが大きな課題となっています。例えば、特定の人物が言ってもいないことを話しているかのような偽の動画（ディープフェイク）が作られ、プロパガンダや名誉毀損に利用されるなど、社会に深刻な悪影響を及ぼす倫理的な問題が懸念されています。`
+      },
+      {
+        index: 4,
+        text: `OpenAIによって開発された動画生成AIのサービス名称として、正しいものを次の選択肢から1つ選びなさい。
+① Runway Gen-3
+② Luma Dream Machine
+③ Sora
+④ Stable Diffusion`,
+        answer: '③',
+        explanation: `Sora（ソラ）は、ChatGPTなどを開発したOpenAIが発表した動画生成AIのサービス名称です。Runway Gen-3はRunway社、Luma Dream MachineはLuma Labs社が提供するサービスです。Stable Diffusionは主に画像生成AIとして知られています。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

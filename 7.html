@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `1950年代後半から1960年代にかけての第一次AIブームにおいて、当時のAIが特に得意としていたことは何か。最も適切なものを次の選択肢から1つ選びなさい。
+① 専門家の知識を基に、複雑な医療診断を行うこと
+② 大量のデータから自律的に学習し、猫の画像を認識すること
+③ ルールが明確に定められたパズルや迷路の問題を解くこと
+④ 人間のように自然な文章を生成し、対話を行うこと`,
+        answer: '③',
+        explanation: `第一次AIブームにおけるAIは、「推論」と「探索」というアプローチが中心でした。これは、あらかじめ定義されたルールとゴールに基づき、コンピュータが解決策を探し出すというものです。そのため、ルールが明確なパズルやゲームなどの特定の問題を解くことに優れていました。`
+      },
+      {
+        index: 2,
+        text: `1980年代に起こった第二次AIブームで主流となった、専門家の知識をコンピュータにルールとして組み込み、特定の分野で専門家のように判断を下すシステムのことを何と呼ぶか。最も適切なものを次の選択肢から1つ選びなさい。
+① マシンラーニングシステム
+② エキスパートシステム
+③ ニューラルネットワーク
+④ ディープラーニングシステム`,
+        answer: '②',
+        explanation: `第二次AIブームでは、特定の専門分野の知識（ナレッジ）をルールベースでコンピュータに実装し、専門家（エキスパート）のように推論や判断を行う「エキスパートシステム」が中心となりました。この技術は、医療診断や金融などの分野での活用が期待されました。`
+      },
+      {
+        index: 3,
+        text: `2010年代から現在まで続く第三次AIブームの大きな原動力となった要素の組み合わせとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 「推論」と「探索」
+② 「専門家の知識」と「ルールベース」
+③ 「ビッグデータ」と「機械学習」
+④ 「記号処理」と「探索アルゴリズム」`,
+        answer: '③',
+        explanation: `第三次AIブームは、インターネットの普及などによって収集可能となった膨大な量の「ビッグデータ」と、コンピュータの計算能力の向上を背景に、データからAI自身がパターンやルールを学ぶ「機械学習」（特にディープラーニング）技術が飛躍的に発展したことによって引き起こされました。`
+      },
+      {
+        index: 4,
+        text: `AIの歴史における各ブームの特徴を古い順に正しく並べたものはどれか。最も適切なものを次の選択肢から1つ選びなさい。
+① 「推論・探索」→「エキスパートシステム」→「機械学習」
+② 「エキスパートシステム」→「機械学習」→「推論・探索」
+③ 「機械学習」→「推論・探索」→「エキスパートシステム」
+④ 「推論・探索」→「機械学習」→「エキスパートシステム」`,
+        answer: '①',
+        explanation: `AIの歴史は大きく3つのブームに分けられます。第一次ブーム（1950年代後半〜）では「推論・探索」が中心でした。次に、第二次ブーム（1980年代）では専門家の知識を活用する「エキスパートシステム」が主流となりました。そして、現在の第三次ブーム（2010年代〜）は、大量のデータに基づく「機械学習」によって牽引されています。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

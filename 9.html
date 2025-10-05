@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `画像認識や画像生成を得意とし、画像を部分から全体へと階層的に理解するために、隣接するピクセルの関係性を重視するアーキテクチャを持つニューラルネットワークとして、最も適切なものを次の選択肢から1つ選びなさい。
+① RNN（回帰型ニューラルネットワーク）
+② CNN（畳み込みニューラルネットワーク）
+③ LSTM（長・短期記憶）
+④ 自己回帰モデル`,
+        answer: '②',
+        explanation: `CNN（畳み込みニューラルネットワーク）は、画像データのような格子状の構造を持つデータを扱うのに適したモデルです。フィルターと呼ばれる仕組みで画像の部分的な特徴（エッジや模様など）を抽出し、それらを組み合わせてより高次の特徴を捉えることで、画像全体の内容を認識します。この仕組みが「目」の役割に例えられます。`
+      },
+      {
+        index: 2,
+        text: `時系列データや文章のように、順序に意味があるデータを扱うことを得意とする一方、文脈が長くなると初期の情報を忘れてしまう（記憶が薄れる）という課題を持つニューラルネットワークとして、最も適切なものを次の選択肢から1つ選びなさい。
+① RNN（回帰型ニューラルネットワーク）
+② ボルツマンマシン
+③ 制約付きボルツマンマシン（RBM）
+④ CNN（畳み込みニューラルネットワーク）`,
+        answer: '①',
+        explanation: `RNN（回帰型ニューラルネットワーク）は、過去の情報を内部に記憶し、それを現在の入力と合わせて処理することで、データの順序性や文脈を捉えることができるモデルです。文章や音声などを扱う「耳」や「口」に例えられますが、構造上、情報が更新され続けるため、長いシーケンスでは古い情報が失われやすいという性質があります。`
+      },
+      {
+        index: 3,
+        text: `RNNが持つ長期的な記憶の課題を克服するために考案され、「忘却ゲート」「入力ゲート」「出力ゲート」という3つのゲート構造を用いて、どの情報を忘れ、どの情報を記憶し、どの情報を出力するかを制御するRNNの進化版モデルとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 自己回帰モデル
+② 制約付きボルツマンマシン（RBM）
+③ LSTM（長・短期記憶）
+④ ボルツマンマシン`,
+        answer: '③',
+        explanation: `LSTM（長・短期記憶）は、RNNの課題であった長期依存性の問題を解決するために開発されました。3つのゲート機構により、過去の情報の中から重要なものだけを選択して長期的に記憶し、不要な情報は忘れるという、より人間に近い記憶の仕組みを実現しています。これにより、長い文章の文脈理解などが可能になりました。`
+      },
+      {
+        index: 4,
+        text: `「過去のデータから次のデータを予測する」という仕組みを持ち、「今日は良い天気」という文に続いて「ですね」という単語を生成するように、文章生成タスクの基本的な原理となっているモデルとして、最も適切なものを次の選択肢から1つ選びなさい。
+① CNN（畳み込みニューラルネットワーク）
+② LSTM（長・短期記憶）
+③ 自己回帰モデル
+④ 制約付きボルツマンマシン（RBM）`,
+        answer: '③',
+        explanation: `自己回帰モデルは、それまでに出現した一連のデータ（単語列など）を条件として、次に出現する確率が最も高いデータを予測し、それを新たな入力として次の予測を行う、という処理を繰り返すモデルです。この仕組みによって、文脈に沿った自然な文章を逐次的に生成することが可能になります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

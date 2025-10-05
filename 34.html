@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `Few-Shotプロンプティングに関する説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① 指示したいタスクの例を全く含めずに、直接的な命令のみで指示を出す手法。
+② 指示したいタスクの例をプロンプトにいくつか含めることで、AIに出力形式や意図を理解させる手法。
+③ モデルの持つ一般的な知識や事前学習のみを頼りにして、タスクを遂行させる手法。
+④ プロンプトが長くなるため、出力の精度が低くなりやすい手法。`,
+        answer: '②',
+        explanation: `Few-Shotプロンプティングは、プロンプト内にいくつかの質問と回答の例（ショット）を提示することで、AIがタスクの文脈や期待される出力形式を正確に理解するのを助ける手法です。これにより、特定の形式やルールに沿った回答を生成させやすくなります。`
+      },
+      {
+        index: 2,
+        text: `Zero-Shotプロンプティングのメリットとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 出力の一貫性や精度を容易に高めることができる。
+② 特殊なルールや特定のフォーマットに従わせるのに適している。
+③ プロンプトの指示がシンプルで短く済む。
+④ AIの意図解釈の曖昧さを完全に排除できる。`,
+        answer: '③',
+        explanation: `Zero-Shotプロンプティングは、タスクの例を含めず、直接的な指示のみを与えるため、プロンプトを非常に簡潔に作成できる点が大きなメリットです。手軽に利用を開始できますが、AIが持つ事前学習知識に完全に依存する形となります。`
+      },
+      {
+        index: 3,
+        text: `次のようなタスクをAIに依頼する場合、Few-Shotプロンプティングの利用が最も適していると考えられるのはどれか。1つ選びなさい。
+① 「日本の首都はどこですか？」という一般的な質問をする。
+② 英語のニュース記事を日本語に翻訳させる。
+③ 商品名と特徴を渡すと「【商品名】キャッチコピー：(ここに生成されたコピー)」という厳密な形式でキャッチコピーを生成させる。
+④ ユーザーからの問い合わせメールに対する一般的な返信文を作成させる。`,
+        answer: '③',
+        explanation: `Few-Shotプロンプティングは、特定の出力フォーマットや、独自のルールに従って回答を生成させたい場合に特に有効です。例として「【商品A】キャッチコピー：最高のA」と提示することで、AIは「【】」や「キャッチコピー：」といった厳密な形式を学習し、それに従った回答を生成しやすくなります。一般的な質問や翻訳はZero-Shotでも十分対応可能です。`
+      },
+      {
+        index: 4,
+        text: `Zero-Shotプロンプティングのデメリットとして、最も可能性が高いものを次の選択肢から1つ選びなさい。
+① プロンプトを作成するために、多くの適切な例を準備する必要がある。
+② 指示がシンプルすぎるため、AIが意図を誤解したり、期待と異なるフォーマットで出力したりすることがある。
+③ プロンプトが長くなりすぎるため、モデルの処理能力の限界を超えることがある。
+④ 出力の精度は高いが、汎用的なタスクには応用しにくい。`,
+        answer: '②',
+        explanation: `Zero-Shotプロンプティングは、AIが持つ広範な事前知識に依存してタスクを処理します。しかし、具体的な例が示されていないため、ユーザーが意図した細かいニュアンスや特定の出力形式をAIが正確に汲み取れず、曖昧さが残ったり、期待とは異なる回答が生成されたりする可能性があります。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

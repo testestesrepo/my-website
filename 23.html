@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `生成AI時代の新たな脅威に関する説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① 攻撃の手口が単純化し、誰でも簡単に見破れるようになる。
+② 不特定多数を狙った画一的な内容の詐欺が増加する。
+③ 個人の趣味や個人情報に合わせて作り込まれた、オーダーメイドの罠が作られるようになる。
+④ 脅威は増えるが、被害は企業や組織に限定され、個人に及ぶことは少ない。`,
+        answer: '③',
+        explanation: `生成AIの進化により、インターネット上で公開されている個人の情報などを悪用し、その人に合わせて最適化された巧妙な詐欺コンテンツ（文章、音声、動画など）を自動で生成することが可能になりました。これにより、まるで自分宛てに作られたかのような、非常に説得力の高い罠が作られる危険性があります。`
+      },
+      {
+        index: 2,
+        text: `生成AIによって巧妙化する詐欺の主な手口として、適切でないものを次の選択肢から1つ選びなさい。
+① 本物のウェブサイトと見分けがつかない偽の文章やデザインを生成する。
+② 実在の人物の声を学習し、本人になりすまして電話をかける。
+③ 人間の感情に訴えかけ、巧みに信頼関係を築こうとする。
+④ 詐欺の実行に手間がかかるようになり、大規模化が困難になる。`,
+        answer: '④',
+        explanation: `生成AIは、詐欺コンテンツの作成やターゲットとのやり取りを自動化することができます。これにより、攻撃者は従来よりもはるかに少ない労力で、同時に多数のターゲットを狙うことが可能になります。したがって、詐欺の自動化・大規模化が進むことが大きな脅威となります。`
+      },
+      {
+        index: 3,
+        text: `生成AIによる詐欺から身を守るための対策として、最も重要な心構えを次の選択肢から1つ選びなさい。
+① 「自分は情報リテラシーが高いので騙されることはない」と強く信じる。
+② 一度設定したプライバシー設定は、セキュリティを保つためになるべく変更しない。
+③ 少しでも「おかしい」と感じる違和感や直感を大切にし、すぐに行動しない。
+④ 送られてきたリンクや連絡先が正しい情報源だと信じ、すぐにアクセスして確認する。`,
+        answer: '③',
+        explanation: `生成AIによる詐欺は非常に巧妙であり、「自分は大丈夫」という過信は危険です。たとえ些細なことであっても、メッセージの内容や相手の言動に違和感を覚えた場合は、それが重要な警告サインである可能性があります。直感を信じ、一度立ち止まって慎重に確認することが被害を防ぐ鍵となります。`
+      },
+      {
+        index: 4,
+        text: `インターネット社会におけるプライバシー設定の重要性に関する記述として、最も適切なものを次の選択肢から1つ選びなさい。
+① インターネットは安全な空間であるため、プライバシー設定は特に必要ない。
+② 情報を積極的に公開することで、AIが自分に有益な情報だけを届けてくれるようになる。
+③ 自分の情報を誰にどこまで見せるかをコントロールするための「自分を守る鎧」の役割を果たす。
+④ プライバシー設定を強化すると、インターネットの便利な機能が一切利用できなくなる。`,
+        answer: '③',
+        explanation: `インターネットは誰でもアクセスできる「開かれた場所」です。そのため、自分の意図しない相手に個人情報が渡ってしまうリスクが常に存在します。プライバシー設定は、公開する情報の範囲を自分で管理・制限するための重要なツールであり、個人情報を守り、様々なリスクを軽減するための防御策（鎧）として機能します。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

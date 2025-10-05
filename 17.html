@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `音楽生成AIができることとして、最も適切なものを次の選択肢から1つ選びなさい。
+① 既存の有名な楽曲を完全に同一の品質で再現すること
+② 人間の感情や経験に基づいた、深い哲学的な意味を持つ歌詞を創作すること
+③ ユーザーが入力した画像や鼻歌などの断片的な情報から、新しいメロディーや伴奏を自動で作曲すること
+④ コンサートホールでの生演奏に特化した、音響効果を最大限に引き出す楽譜を生成すること`,
+        answer: '③',
+        explanation: `音楽生成AIは、テキスト、画像、音声（鼻歌など）といった多様な形式の入力データをもとに、それに応じた新しい音楽やメロディー、伴奏などを自動で作り出す能力を持っています。専門的な音楽知識がない人でも、イメージを伝えるだけで曲の制作が可能になる点が大きな特徴です。`
+      },
+      {
+        index: 2,
+        text: `音楽生成AIが新しい楽曲を作り出す仕組みに関する説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① 世界的に著名な作曲家数名の脳波をスキャンし、その思考パターンを模倣している。
+② 物理モデルに基づき、楽器の音響特性や空気の振動をシミュレーションして音を合成している。
+③ MIDIファイル（デジタル楽譜）のような大量の音楽データをAIに学習させ、そのデータに含まれるパターンや構造を基に新しい曲を生成している。
+④ 音楽理論のルールや和声学の全法則をプログラムとしてハードコーディングし、そのルールに従って組み合わせを生成している。`,
+        answer: '③',
+        explanation: `多くの音楽生成AIは、MIDIファイルやオーディオファイルといった膨大な量の音楽データを学習します。この学習プロセスを通じて、メロディーの展開、リズムのパターン、和音の進行といった音楽的な構造をモデルが内部的に獲得します。そして、その学習した知識を応用して、新しいオリジナルの楽曲を生成します。RNN（再帰型ニューラルネットワーク）などの技術が、時系列データである音楽の自然な流れを再現するために用いられることがあります。`
+      },
+      {
+        index: 3,
+        text: `音楽生成AIを活用することによる主なメリットとして、最も不適切なものを次の選択肢から1つ選びなさい。
+① 専門的な作曲知識がない人でも、手軽に音楽制作を始めることができる。
+② 映像制作者やゲーム開発者が、低コストかつ短時間でBGMを調達できる。
+③ 生成された音楽は、人間の創作物と同様に必ず著作権で保護され、制作者の権利が保証される。
+④ プロの作曲家がアイデア出しや編曲作業の効率化を図るためのツールとして利用できる。`,
+        answer: '③',
+        explanation: `AIによって自動生成された音楽の著作権の扱いは、非常に複雑な課題です。現在の法制度では、著作権は人間の「思想又は感情を創作的に表現したもの」に発生するとされており、AIが自律的に生成しただけのものには著作権が発生しないという考え方が一般的です。そのため、生成された音楽が必ずしも著作権で保護されるとは限りません。`
+      },
+      {
+        index: 4,
+        text: `音楽生成AIを利用する上での注意点やリスクとして、最も関連性の低いものを次の選択肢から1つ選びなさい。
+① AIが学習データに含まれる既存の楽曲に酷似したメロディーを生成してしまい、意図せず著作権を侵害してしまうリスク。
+② AIが出力する楽曲の品質が常にプロレベルに達するとは限らず、独創性に限界がある可能性。
+③ AIモデルのトレーニングや運用に大量の電力を消費するため、環境負荷が大きくなる問題。
+④ 実在するアーティストの声を模倣して偽の楽曲を作成するなど、悪意のある目的で技術が使用されるリスク。`,
+        answer: '③',
+        explanation: `音楽生成AIの利用には、著作権侵害、品質や独創性の限界、そして偽作品の制作といった悪用のリスクが指摘されています。これらは、技術の利用者が直接的に直面する可能性のある倫理的・法的な課題です。一方、AIの運用に伴う電力消費や環境負荷の問題は、AI技術全般に共通するより広範な課題であり、音楽生成AI利用における直接的なリスクとして挙げられることは比較的少ないです。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

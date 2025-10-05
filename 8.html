@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `シンギュラリティ（技術的特異点）の定義として、最も適切なものを次の選択肢から1つ選びなさい。
+① AIが人間の感情を完璧に模倣できるようになる時点
+② AIの知能が人間全体の知能を超え、未来の予測が困難になる時点
+③ AIによって人間の仕事の半分以上が自動化される時点
+④ AIが初めて自己意識を持つと科学的に証明される時点`,
+        answer: '②',
+        explanation: `シンギュラリティとは、AIが自己進化を繰り返し、その知能が全人類の知能の総和を超える転換点を指します。この点に達すると、AIによる技術の進歩が人間の予測能力をはるかに超えるため、未来社会がどうなるのかを予測することが極めて困難になるとされています。`
+      },
+      {
+        index: 2,
+        text: `シンギュラリティの到来年を2045年と予測し、「2045年問題」として提唱したことで知られる人物は誰か、次の選択肢から1つ選びなさい。
+① ヴァーナー・ヴィンジ
+② ジェフリー・ヒントン
+③ レイ・カーツワイル
+④ アラン・チューリング`,
+        answer: '③',
+        explanation: `アメリカの著名な発明家であり、AI研究の権威であるレイ・カーツワイル氏が、自身の著書などで「収穫加速の法則」に基づき、2045年にシンギュラリティが到来するという説を提唱しました。これは「2045年問題」として広く知られています。ヴァーナー・ヴィンジ氏もシンギュラリティの概念を広めた重要な人物です。`
+      },
+      {
+        index: 3,
+        text: `シンギュラリティに対して懐疑的な見方を生む一因とされる「AI効果」とは、どのような考え方か、次の選択肢から1つ選びなさい。
+① AIが社会に普及することで、人間の知能が全体的に低下してしまうという考え方
+② AIがかつては知的だとされた課題を解決すると、それがもはや「知能」とは見なされなくなるという考え方
+③ AIが人間にとって代わることで、経済的な格差が極端に拡大してしまうという考え方
+④ AIの判断根拠が不明瞭なため、重要な決定を任せるべきではないという考え方`,
+        answer: '②',
+        explanation: `「AI効果」とは、AI技術がある課題（例えば、チェスで名人に勝つこと）をクリアすると、人々がその課題を「高度な知能が必要なもの」とは考えなくなり、「それは単なる計算処理に過ぎない」と見なすようになる現象を指します。このため、AIがいくら進化しても、人間が「真の知能」の定義を常に更新し続けるため、シンギュラリティは訪れないのではないか、という懐疑的な見方の根拠の一つとされています。`
+      },
+      {
+        index: 4,
+        text: `シンギュラリティという未来予測に対する適切な捉え方として、最も推奨されるものを次の選択肢から1つ選びなさい。
+① 多くの専門家が否定しているため、非科学的な空想として無視するべきである。
+② すでに到来することが確定している未来の事実として、具体的な対策を急ぐべきである。
+③ 技術の発展によって起こりうる可能性のある未来シナリオの一つとして認識し、今後の動向を注視するべきである。
+④ 技術的な議論であり、社会や個人の生活には直接的な影響がないものとして捉えるべきである。`,
+        answer: '③',
+        explanation: `シンギュラリティは、科学的に到来が証明された確定的な未来ではありません。専門家の間でも様々な意見があり、あくまで技術発展の延長線上にある可能性の一つとして議論されている段階です。そのため、極端に楽観視したり悲観視したりするのではなく、数ある未来予測の一つとして冷静に捉え、関連技術や社会の動向に関心を持ち続けることが重要です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

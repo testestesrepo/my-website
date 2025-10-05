@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `ルールベースAIと機械学習AIの「仕組み」に関する違いの説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① ルールベースAIはデータから自らルールを学習し、機械学習AIは人間が全てのルールを教え込む。
+② ルールベースAIも機械学習AIも、AIがデータから自らルールを学習する点で共通している。
+③ ルールベースAIは人間が全てのルールを教え込み、機械学習AIはデータから自らルールを学習する。
+④ ルールベースAIも機械学習AIも、人間が全てのルールを教え込む必要がある点で共通している。`,
+        answer: '③',
+        explanation: `ルールベースAIは、人間があらかじめ「もしAならばBする」といったルールを全て定義し、そのルールに従って動作します。一方、機械学習AIは、与えられた大量のデータの中からAI自身がパターンや法則性を見つけ出し、それを判断のルールとして学習します。`
+      },
+      {
+        index: 2,
+        text: `過去の気象データと農作物の収穫量のデータを分析し、今年の収穫量を予測する、というタスクに最も適しているAIはどちらか。次の選択肢から1つ選びなさい。
+① ルールベースAI
+② 機械学習AI
+③ どちらのAIも等しく適している
+④ どちらのAIもこのタスクには適していない`,
+        answer: '②',
+        explanation: `機械学習AIは、過去のデータに基づいた予測や分類を得意としています。気象データと収穫量のような複雑な関係性の中からパターンを学び取り、未来の収穫量を予測するタスクは、機械学習AIの活用が非常に有効な典型例です。一方、ルールベースAIは決められた作業を正確に行うことは得意ですが、このような予測タスクには適していません。`
+      },
+      {
+        index: 3,
+        text: `ルールベースAIの「弱点」として、最も適切なものを次の選択肢から1つ選びなさい。
+① 大量の学習データが必要になる。
+② 判断の根拠がブラックボックス化しやすく、人間には理解が難しいことがある。
+③ 人間によって事前にルール化されていない、想定外の状況に対応できない。
+④ 過去のデータに存在しない、全く新しい事象への対応ができない。`,
+        answer: '③',
+        explanation: `ルールベースAIは、人間が作成したルールリストに基づいて動作するため、そのリストにない状況や予期せぬ出来事に遭遇すると、どのように対処すべきか判断できず、停止したり誤作動を起こしたりする可能性があります。①、②、④は主に機械学習AIに見られる弱点や課題です。`
+      },
+      {
+        index: 4,
+        text: `工場の生産ラインで、決められた手順書（マニュアル）通りに寸分の狂いなく部品の組み立てを行う産業用ロボットは、主にどちらのAIの考え方に近いか。最も適切なものを次の選択肢から1つ選びなさい。
+① 機械学習
+② ルールベース
+③ 強化学習
+④ 生成AI`,
+        answer: '②',
+        explanation: `マニュアル通りに決められた作業を正確に繰り返すロボットは、あらかじめ人間によって全ての動作ルールがプログラムされているため、ルールベースAIの考え方に非常に近い例と言えます。一方、機械学習は「経験を積んでコツを掴む新人」のように、データから学習して性能を向上させていくアプローチです。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>

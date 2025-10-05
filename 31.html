@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>四股択一式 問題</title>
+  <style>
+    :root{--bg:#f7f9fc;--card:#ffffff;--accent:#0b66ff;--muted:#586069}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:#0b1a2b;margin:0;padding:32px}
+    .wrap{max-width:880px;margin:0 auto}
+    h1{font-size:1.6rem;margin:0 0 18px}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(12,18,30,0.06);padding:18px;margin-bottom:14px}
+    .q-title{display:flex;align-items:center;gap:12px}
+    .q-index{background:linear-gradient(90deg,#e8f0ff,#eef7ff);color:var(--accent);padding:6px 10px;border-radius:8px;font-weight:700}
+    .question{font-size:1.05rem;line-height:1.6;margin:8px 0 14px;white-space: pre-wrap;} /* ← ここを修正 */
+    .toggle-btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;margin-top:8px}
+    .answer-box{display:none;margin-top:12px;padding:12px 14px;border-left:3px solid #eef3fb;background:#ffffff;border-radius:8px}
+    .answer-pill{padding:6px 10px;border-radius:999px;font-weight:700;border:1px solid rgba(0,0,0,0.06);display:inline-block;margin-bottom:8px}
+    .answer-box p{margin:0 0 8px;line-height:1.7}
+
+    .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,102,255,0.14)}
+
+    @media (max-width:520px){body{padding:18px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>四股択一式 問題</h1>
+
+    <div class="controls">
+      <button class="btn" id="openAll">すべて表示</button>
+      <button class="btn ghost" id="closeAll">すべて隠す</button>
+    </div>
+
+    <div id="quiz"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        index: 1,
+        text: `AIガバナンスを導入する最初のフェーズである「環境・リスク分析」で実施すべきこととして、最も適切なものを次の選択肢から1つ選びなさい。
+① 設定したゴールを達成するための具体的なAIマネジメントシステムを設計し、運用を開始する。
+② AI技術がビジネスや社会にもたらすプラスの側面とマイナスの側面を分析し、社会的に受け入れられるかを検討する。
+③ AIの活用が組織の経営理念に合致しているかを判断し、AIガバナンスの具体的な目標を定める。
+④ 運用中の管理体制が適切に機能しているかを継続的に監視し、改善点を見つけ出す。`,
+        answer: '②',
+        explanation: `AIガバナンスの初期段階では、まずAIがもたらす便益（プラスの側面）とリスク（マイナスの側面）を多角的に分析することが重要です。また、そのAIの利用が倫理的、社会的に許容されるかどうか（社会的受容性）を検討することも、この段階の重要な活動に含まれます。`
+      },
+      {
+        index: 2,
+        text: `AIガバナンスの「ゴール設定」フェーズに関する説明として、最も適切なものを次の選択肢から1つ選びなさい。
+① AIの判断プロセスを外部に説明できるように、システムの透明性を確保する技術的な要件を決定する。
+② 法律や社会規範の変化を常に監視し、必要に応じてガバナンス方針を修正する体制を構築する。
+③ 環境・リスク分析の結果を踏まえ、AIをそもそも活用するべきかを判断し、組織の理念に沿ったガバナンス方針を策定する。
+④ 構築した管理体制が意図した通りに機能しているか、定期的なリスク評価を通じて確認する。`,
+        answer: '③',
+        explanation: `「ゴール設定」フェーズでは、初期分析の結果をもとに、AIを活用すること自体の是非を判断します。そして、活用すると決めた場合には、組織の経営理念やビジョンと整合性がとれた、AIガバナンスが目指すべき方針（ゴール）を明確に定めることが求められます。`
+      },
+      {
+        index: 3,
+        text: `AIガバナンスの「システムデザイン・運用」フェーズにおいて、特に重視されるべき要素として最も適切なものを次の選択肢から1つ選びなさい。
+① AI活用によって得られる便益の最大化とリスクの洗い出し。
+② AIの意思決定の根拠やプロセスをステークホルダーに適切に説明できる責任の担保。
+③ 変化する外部環境に対応するための、継続的な情報収集と分析。
+④ 組織の経営理念とAI活用方針との整合性の確認。`,
+        answer: '②',
+        explanation: `「システムデザイン・運用」フェーズでは、設定したゴールを実現するための具体的な管理体制を構築・運用します。この際、AIの出す結論やその判断プロセスがブラックボックス化しないよう、利用者や社会に対して透明性を持ち、なぜそのような判断に至ったのかを説明できる責任（説明責任）を確保することが極めて重要となります。`
+      },
+      {
+        index: 4,
+        text: `AIガバナンスが一度構築したら終わりではなく、継続的な改善が必要とされる理由として、最も適切なものを次の選択肢から1つ選びなさい。
+① AIシステムの開発には多額の費用がかかるため、一度設計した内容は変更すべきではないから。
+② AI技術や関連法規、社会の価値観は常に変化するため、それらに合わせてガバナンス体制も見直す必要があるから。
+③ AIガバナンスのゴールは、一度設定したら不変のものであるべきだから。
+④ 外部の専門家にガバナンス体制の構築を委託するため、内部での見直しは不要だから。`,
+        answer: '②',
+        explanation: `AIを取り巻く環境は、技術の進歩、新しい法律や規制の制定、社会的な倫理観の変化など、常に変動しています。そのため、AIガバナンスもこれらの外部環境の変化を継続的に監視し、リスクを再評価したり、設定したゴールや方針自体を柔軟に見直したりしていく、循環的なプロセスであることが不可欠です。`
+      }
+    ];
+
+    const quizEl = document.getElementById('quiz');
+
+    function createCard(q){
+      const card = document.createElement('section');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.innerHTML = `<div class="q-index">第${q.index}問</div><div style="flex:1"><div class="question">${escapeHTML(q.text)}</div></div>`;
+      card.appendChild(title);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.textContent = '解答と解説をみる';
+      card.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'answer-box';
+      box.innerHTML = `<div class="answer-pill">解答: ${escapeHTML(q.answer)}</div><p>${escapeHTML(q.explanation)}</p>`;
+      card.appendChild(box);
+
+      btn.addEventListener('click',()=>{
+        const visible = box.style.display === 'block';
+        box.style.display = visible ? 'none' : 'block';
+        btn.textContent = visible ? '解答と解説をみる' : '隠す';
+      });
+
+      return card;
+    }
+
+    function escapeHTML(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
+    }
+
+    questions.forEach(q => quizEl.appendChild(createCard(q)));
+
+    document.getElementById('openAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='block');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='隠す');
+    });
+    document.getElementById('closeAll').addEventListener('click',()=>{
+      document.querySelectorAll('.answer-box').forEach(b=>b.style.display='none');
+      document.querySelectorAll('.toggle-btn').forEach(btn=>btn.textContent='解答と解説をみる');
+    });
+  </script>
+</body>
+</html>
